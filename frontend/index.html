@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion Supply Chain</title>
+    <link rel="stylesheet" href="style.css?v=20260606-ui-refresh" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- Nav Bar -->
+    <nav class="tab-bar">
+        <div class="tab-bar-left">
+            <div class="app-brand">Fashion Supply Chain</div>
+        </div>
+
+        <div class="tab-bar-center">
+            <button class="tab-btn active" data-tab="student">Student</button>
+            <button class="tab-btn" data-tab="instructor">Instructor</button>
+            <button class="tab-btn" data-tab="debug">Debug</button>
+        </div>
+
+        <div class="tab-bar-right">
+            <div class="notification-dropdown">
+                <button class="notification-btn" id="notification-dropdown-btn">
+                    🔔
+                    <span class="notification-badge hidden" id="notification-badge">0</span>
+                </button>
+                <div class="notification-dropdown-content" id="notification-dropdown-content">
+                    <div class="notification-header">Notifications</div>
+                    <ul id="notification-list"></ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Always-visible phase banner -->
+    <div class="phase-banner-bar" id="phase-banner">No game started. Use the Instructor tab to start a new game.</div>
+
+    <!-- ================================ -->
+    <!-- Student Tab -->
+    <!-- ================================ -->
+    <div id="student-tab" class="tab-content active">
+
+        <!-- Current Contract -->
+        <section>
+            <h3>Current Contract</h3>
+            <div id="contract-summary">No active contract. Negotiate terms before ordering.</div>
+        </section>
+
+        <div class="student-two-column">
+            <!-- Left: Demand History -->
+            <div class="student-left-column">
+                <section>
+                    <h3>Demand History</h3>
+                    <canvas id="demand-chart" width="600" height="250"></canvas>
+                    <p id="demand-history-summary" style="margin-top:0.75rem;">No demand history yet.</p>
+                    <table id="demand-history-table">
+                        <thead>
+                            <tr><th>Period / Round</th><th>Demand</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </section>
+            </div>
+
+            <!-- Right: Negotiation + Order -->
+            <div class="student-right-column">
+
+                <!-- Negotiation -->
+                <section id="negotiation-section">
+                    <h3>Negotiation</h3>
+                    <p>Propose contract terms to the supplier AI.</p>
+
+                    <form id="negotiate-form">
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <label>Contract Type</label>
+                                <select id="contract-type-input">
+                                    <option value="buyback" selected>Buyback</option>
+                                    <option value="revenue_sharing">Revenue Sharing</option>
+                                    <option value="hybrid">Hybrid (Buyback + Share)</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label>Contract Length (rounds)</label>
+                                <input type="number" id="length-input" value="3" min="1">
+                            </div>
+                            <div class="form-field">
+                                <label>Wholesale Price (w)</label>
+                                <input type="number" step="0.1" id="wholesale-input" value="18">
+                            </div>
+                            <!-- Buyback fields -->
+                            <div class="form-field neg-field-buyback neg-field-hybrid">
+                                <label>Buyback Price (b)</label>
+                                <input type="number" step="0.1" id="buyback-input" value="9">
+                            </div>
+                            <div class="form-field neg-field-buyback neg-field-hybrid">
+                                <label>Cap Type</label>
+                                <select id="cap-type-input">
+                                    <option value="fraction">Fraction</option>
+                                    <option value="unit">Unit</option>
+                                </select>
+                            </div>
+                            <div class="form-field neg-field-buyback neg-field-hybrid">
+                                <label>Cap Value (φ or B_max)</label>
+                                <input type="number" step="0.1" id="cap-value-input" value="0.25">
+                            </div>
+                            <!-- Revenue sharing fields -->
+                            <div class="form-field neg-field-revenue_sharing neg-field-hybrid">
+                                <label>Revenue Share (0–1)</label>
+                                <input type="number" step="0.05" id="revenue-share-input" value="0.2">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit">Submit Proposal</button>
+                        </div>
+                    </form>
+
+                    <div id="submitted-proposal" class="submitted-section">
+                        <h4>Your Submitted Proposal</h4>
+                        <div id="submitted-details">No proposal submitted yet.</div>
+                    </div>
+
+                    <div id="counteroffer-section" class="hidden-section">
+                        <h4>Supplier Offer</h4>
+                        <div id="counteroffer-details"></div>
+                        <div class="counteroffer-actions">
+                            <button id="accept-counter-btn">✓ Accept Offer</button>
+                            <button id="reject-counter-btn">✕ Reject Offer</button>
+                        </div>
+                    </div>
+
+                    <div id="negotiation-chat-section" class="hidden-section chat-wrapper">
+                        <div class="chat-header">
+                            <div class="chat-header-avatar">AI</div>
+                            <div class="chat-header-info">
+                                <div class="chat-header-name">Supplier AI</div>
+                                <div class="chat-header-status">Online · Negotiating</div>
+                            </div>
+                        </div>
+                        <div id="chat-messages" class="chat-messages-container"></div>
+                        <form id="chat-form" class="chat-form-row">
+                            <input type="text" id="chat-input" placeholder="Message Supplier…" class="chat-input">
+                            <button type="submit" id="chat-send-btn">&#8593;</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Order Decision -->
+                <section id="order-decision-section">
+                    <h3>Order Decision</h3>
+                    <p>Place an order for the current round under the active contract.</p>
+                    <form id="order-form">
+                        <div class="form-grid" style="max-width: 320px;">
+                            <div class="form-field">
+                                <label>Order Quantity (Q)</label>
+                                <input type="number" id="order-quantity-input" value="500" min="0">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit">Place Order</button>
+                        </div>
+                    </form>
+                    <h4>Round Result</h4>
+                    <div id="round-result-card" class="round-result-card" style="padding: 1rem; color: var(--text-muted); font-size:0.875rem;">
+                        No order placed yet.
+                    </div>
+                </section>
+
+            </div>
+        </div>
+
+        <!-- Game Summary -->
+        <section>
+            <h3>Game Summary</h3>
+            <p>Populated after the game ends.</p>
+            <pre id="summary-output">No summary yet.</pre>
+        </section>
+    </div>
+
+    <!-- ================================ -->
+    <!-- Instructor Tab -->
+    <!-- ================================ -->
+    <div id="instructor-tab" class="tab-content">
+
+        <!-- Game Setup -->
+        <section>
+            <h3>Game Setup</h3>
+            <div class="form-grid" style="max-width: 560px;">
+                <div class="form-field">
+                    <label>Demand Method</label>
+                    <select id="demand-method-input">
+                        <option value="bootstrap">Bootstrap (sample from history)</option>
+                        <option value="normal">Normal (μ, σ from history)</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Total Rounds</label>
+                    <input type="number" id="rounds-input" value="10" min="1" max="200">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button id="start-game-btn">▶ Start New Game</button>
+            </div>
+        </section>
+
+        <!-- End Game Early -->
+        <section>
+            <h3>End Game Early</h3>
+            <p>End the current game and generate the summary. This will mark the game as complete.</p>
+            <button id="end-game-early-btn">■ End Game Early</button>
+            <div id="end-game-early-output" class="end-game-output"></div>
+        </section>
+
+        <!-- Simulation Configuration -->
+        <section>
+            <h3>Simulation Configuration</h3>
+            <div class="form-actions" style="margin-top:0;">
+                <button id="load-config-btn">Load Current Config</button>
+            </div>
+            <h4>Current Configuration</h4>
+            <pre id="config-output">Click "Load Current Config" to view settings.</pre>
+
+            <h4>Update Economic Parameters</h4>
+            <form id="update-econ-form">
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label>Retail Price (p)</label>
+                        <input type="number" step="0.1" id="econ-retail" />
+                    </div>
+                    <div class="form-field">
+                        <label>Buyer Salvage Value (v_b)</label>
+                        <input type="number" step="0.1" id="econ-buyer-salvage" />
+                    </div>
+                    <div class="form-field">
+                        <label>Supplier Salvage Value (v_s)</label>
+                        <input type="number" step="0.1" id="econ-supplier-salvage" />
+                    </div>
+                    <div class="form-field">
+                        <label>Supplier Cost (c)</label>
+                        <input type="number" step="0.1" id="econ-supplier-cost" />
+                    </div>
+                    <div class="form-field">
+                        <label>Return Shipping Buyer (c_ret)</label>
+                        <input type="number" step="0.1" id="econ-return-ship" />
+                    </div>
+                    <div class="form-field">
+                        <label>Return Handling Supplier (h)</label>
+                        <input type="number" step="0.1" id="econ-return-handle" />
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit">Save Economic Params</button>
+                </div>
+            </form>
+
+            <h4>Update Demand History</h4>
+            <p>Enter one integer per line:</p>
+            <div class="form-field" style="max-width: 280px;">
+                <textarea id="history-input" rows="6" style="width:100%; font-family: var(--font-mono); font-size:0.85rem;"></textarea>
+            </div>
+            <div class="form-actions">
+                <button id="save-history-btn">Save History</button>
+            </div>
+        </section>
+
+        <!-- Negotiation Configuration -->
+        <section>
+            <h3>Negotiation Configuration</h3>
+            <div class="form-actions" style="margin-top:0;">
+                <button id="load-negotiation-config-btn">Load Current Negotiation Config</button>
+            </div>
+            <h4>Current Negotiation Configuration</h4>
+            <pre id="negotiation-config-output">Click "Load Current Negotiation Config" to view settings.</pre>
+
+            <h4>Update Negotiation Configuration</h4>
+            <form id="update-negotiation-config-form">
+                <div class="form-field" style="margin-bottom:1rem;">
+                    <label>Available Contract Types</label>
+                    <div id="neg-config-contract-types-container" class="contract-types-container">
+                        <label class="contract-type-checkbox-label">
+                            <input type="checkbox" name="contract-type" value="buyback" id="neg-config-ct-buyback" /> Buyback
+                        </label>
+                        <label class="contract-type-checkbox-label">
+                            <input type="checkbox" name="contract-type" value="revenue_sharing" id="neg-config-ct-revenue-sharing" /> Revenue Sharing
+                        </label>
+                        <label class="contract-type-checkbox-label">
+                            <input type="checkbox" name="contract-type" value="hybrid" id="neg-config-ct-hybrid" /> Hybrid
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label>Contract Length — Minimum</label>
+                        <input type="number" id="neg-config-length-min" min="1" />
+                    </div>
+                    <div class="form-field">
+                        <label>Contract Length — Maximum</label>
+                        <input type="number" id="neg-config-length-max" min="1" />
+                    </div>
+                    <div class="form-field">
+                        <label>Cap Type Allowed</label>
+                        <select id="neg-config-cap-type-allowed">
+                            <option value="fraction">Fraction Only</option>
+                            <option value="unit">Unit Only</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Cap Value — Minimum</label>
+                        <input type="number" step="0.01" id="neg-config-cap-value-min" min="0" />
+                    </div>
+                    <div class="form-field">
+                        <label>Cap Value — Maximum</label>
+                        <input type="number" step="0.01" id="neg-config-cap-value-max" min="0" />
+                    </div>
+                    <div class="form-field">
+                        <label>Revenue Share — Minimum</label>
+                        <input type="number" step="0.01" id="neg-config-revenue-share-min" min="0" max="1" />
+                    </div>
+                    <div class="form-field">
+                        <label>Revenue Share — Maximum</label>
+                        <input type="number" step="0.01" id="neg-config-revenue-share-max" min="0" max="1" />
+                    </div>
+                </div>
+
+                <div class="form-field" style="margin-top:1rem;">
+                    <label>System Prompt Template</label>
+                    <textarea id="neg-config-prompt-template" rows="15" class="monospace-textarea"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit">Save Negotiation Config</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Game Summary -->
+        <section>
+            <h3>Game Summary</h3>
+            <p>Populated after the game ends.</p>
+            <pre id="summary-output-instructor">No summary yet.</pre>
+        </section>
+    </div>
+
+    <!-- ================================ -->
+    <!-- Debug Tab -->
+    <!-- ================================ -->
+    <div id="debug-tab" class="tab-content">
+        <section>
+            <h3>Backend Health</h3>
+            <button id="health_button">Check Backend Health</button>
+            <pre id="health_output"></pre>
+        </section>
+        <section>
+            <h3>AI Provider Status</h3>
+            <button id="ai-status-button">Check AI Status</button>
+            <div id="ai-status-output" class="ai-status-output"></div>
+        </section>
+        <section>
+            <h3>Raw Game State</h3>
+            <p>Full JSON state for debugging.</p>
+            <pre id="game-state-output">No game started yet.</pre>
+        </section>
+        <section>
+            <h3>Raw Round Data</h3>
+            <pre id="order-output">No order placed yet.</pre>
+        </section>
+        <section>
+            <h3>Negotiation Response</h3>
+            <pre id="negotiate-output">No negotiation yet.</pre>
+        </section>
+        <section>
+            <h3>Game Summary</h3>
+            <pre id="summary-output-debug">No summary yet.</pre>
+        </section>
+    </div>
+
+    <script src="main.js?v=20260606-ui-refresh"></script>
+</body>
+</html>
