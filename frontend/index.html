@@ -79,8 +79,6 @@
                                 <label>Contract Type</label>
                                 <select id="contract-type-input">
                                     <option value="buyback" selected>Buyback</option>
-                                    <option value="revenue_sharing">Revenue Sharing</option>
-                                    <option value="hybrid">Hybrid (Buyback + Share)</option>
                                 </select>
                             </div>
                             <div class="form-field">
@@ -92,25 +90,9 @@
                                 <input type="number" step="0.1" id="wholesale-input" value="18">
                             </div>
                             <!-- Buyback fields -->
-                            <div class="form-field neg-field-buyback neg-field-hybrid">
+                            <div class="form-field neg-field-buyback">
                                 <label>Buyback Price (b)</label>
                                 <input type="number" step="0.1" id="buyback-input" value="9">
-                            </div>
-                            <div class="form-field neg-field-buyback neg-field-hybrid">
-                                <label>Cap Type</label>
-                                <select id="cap-type-input">
-                                    <option value="fraction">Fraction</option>
-                                    <option value="unit">Unit</option>
-                                </select>
-                            </div>
-                            <div class="form-field neg-field-buyback neg-field-hybrid">
-                                <label>Cap Value (φ or B_max)</label>
-                                <input type="number" step="0.1" id="cap-value-input" value="0.25">
-                            </div>
-                            <!-- Revenue sharing fields -->
-                            <div class="form-field neg-field-revenue_sharing neg-field-hybrid">
-                                <label>Revenue Share (0–1)</label>
-                                <input type="number" step="0.05" id="revenue-share-input" value="0.2">
                             </div>
                         </div>
                         <div class="form-actions">
@@ -281,13 +263,7 @@
                     <label>Available Contract Types</label>
                     <div id="neg-config-contract-types-container" class="contract-types-container">
                         <label class="contract-type-checkbox-label">
-                            <input type="checkbox" name="contract-type" value="buyback" id="neg-config-ct-buyback" /> Buyback
-                        </label>
-                        <label class="contract-type-checkbox-label">
-                            <input type="checkbox" name="contract-type" value="revenue_sharing" id="neg-config-ct-revenue-sharing" /> Revenue Sharing
-                        </label>
-                        <label class="contract-type-checkbox-label">
-                            <input type="checkbox" name="contract-type" value="hybrid" id="neg-config-ct-hybrid" /> Hybrid
+                            <input type="checkbox" name="contract-type" value="buyback" id="neg-config-ct-buyback" checked disabled /> Buyback
                         </label>
                     </div>
                 </div>
@@ -301,30 +277,7 @@
                         <label>Contract Length — Maximum</label>
                         <input type="number" id="neg-config-length-max" min="1" />
                     </div>
-                    <div class="form-field">
-                        <label>Cap Type Allowed</label>
-                        <select id="neg-config-cap-type-allowed">
-                            <option value="fraction">Fraction Only</option>
-                            <option value="unit">Unit Only</option>
-                            <option value="both">Both</option>
-                        </select>
-                    </div>
-                    <div class="form-field">
-                        <label>Cap Value — Minimum</label>
-                        <input type="number" step="0.01" id="neg-config-cap-value-min" min="0" />
-                    </div>
-                    <div class="form-field">
-                        <label>Cap Value — Maximum</label>
-                        <input type="number" step="0.01" id="neg-config-cap-value-max" min="0" />
-                    </div>
-                    <div class="form-field">
-                        <label>Revenue Share — Minimum</label>
-                        <input type="number" step="0.01" id="neg-config-revenue-share-min" min="0" max="1" />
-                    </div>
-                    <div class="form-field">
-                        <label>Revenue Share — Maximum</label>
-                        <input type="number" step="0.01" id="neg-config-revenue-share-max" min="0" max="1" />
-                    </div>
+                    <!-- Cap/revenue-share fields removed (backend no longer supports these) -->
                 </div>
 
                 <div class="form-field" style="margin-top:1rem;">

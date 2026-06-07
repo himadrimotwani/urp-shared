@@ -627,7 +627,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const typeLabelMap = { buyback: "Buyback", revenue_sharing: "Revenue Sharing", hybrid: "Hybrid" };
+        const typeLabelMap = { buyback: "Buyback" };
         const typeLabel = typeLabelMap[contract.contract_type] || contract.contract_type;
         const totalRounds = contract.length || 1;
         const usedRounds = totalRounds - remaining;
@@ -636,20 +636,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let html = `<span class="contract-badge">${typeLabel}</span>`;
         html += '<div class="contract-summary-grid">';
         html += `<div class="contract-field"><strong>Wholesale (w):</strong> ${contract.wholesale_price}</div>`;
-        
-        if (contract.contract_type === "buyback" || contract.contract_type === "hybrid") {
-            html += `<div class="contract-field"><strong>Buyback (b):</strong> ${contract.buyback_price}</div>`;
-            if (contract.cap_type === "fraction") {
-                html += `<div class="contract-field"><strong>Return cap:</strong> φ = ${contract.cap_value}</div>`;
-            } else if (contract.cap_type === "unit") {
-                html += `<div class="contract-field"><strong>Return cap:</strong> B_max = ${contract.cap_value} units</div>`;
-            }
-        }
-        
-        if (contract.contract_type === "revenue_sharing" || contract.contract_type === "hybrid") {
-            html += `<div class="contract-field"><strong>Revenue share:</strong> ${contract.revenue_share}</div>`;
-        }
-        
+        html += `<div class="contract-field"><strong>Buyback (b):</strong> ${contract.buyback_price}</div>`;
         html += `<div class="contract-field"><strong>Length:</strong> ${contract.length} rounds</div>`;
         html += `<div class="contract-field"><strong>Remaining:</strong> ${remaining} round${remaining !== 1 ? "s" : ""}</div>`;
         html += '</div>';
@@ -1054,25 +1041,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const section = document.getElementById("counteroffer-section");
         const details = document.getElementById("counteroffer-details");
         if (!section || !details) return;
-        
+
         let html = `<p><strong>${message}</strong></p>`;
         html += `<div class="contract-summary-grid">`;
         html += `<div class="contract-field"><strong>Type:</strong> ${counterContract.contract_type}</div>`;
         html += `<div class="contract-field"><strong>Wholesale (w):</strong> ${counterContract.wholesale_price}</div>`;
-        if (counterContract.contract_type === "buyback" || counterContract.contract_type === "hybrid") {
-            html += `<div class="contract-field"><strong>Buyback (b):</strong> ${counterContract.buyback_price}</div>`;
-            if (counterContract.cap_type === "fraction") {
-                html += `<div class="contract-field"><strong>Return cap:</strong> φ = ${counterContract.cap_value} (fraction of Q)</div>`;
-            } else {
-                html += `<div class="contract-field"><strong>Return cap:</strong> B_max = ${counterContract.cap_value} units</div>`;
-            }
-        }
-        if (counterContract.contract_type === "revenue_sharing" || counterContract.contract_type === "hybrid") {
-            html += `<div class="contract-field"><strong>Revenue share:</strong> ${counterContract.revenue_share}</div>`;
-        }
+        html += `<div class="contract-field"><strong>Buyback (b):</strong> ${counterContract.buyback_price}</div>`;
         html += `<div class="contract-field"><strong>Length (L):</strong> ${counterContract.length} rounds</div>`;
         html += `</div>`;
-        
+
         details.innerHTML = html;
         section.classList.remove("hidden-section");
         section.style.display = "block";
@@ -1256,29 +1233,20 @@ document.addEventListener("DOMContentLoaded", () => {
             // Collect form values
             const wInput = document.getElementById("wholesale-input");
             const bInput = document.getElementById("buyback-input");
-            const capTypeInput = document.getElementById("cap-type-input");
-            const capValueInput = document.getElementById("cap-value-input");
             const lengthInput = document.getElementById("length-input");
             const contractTypeInput = document.getElementById("contract-type-input");
-            const revenueShareInput = document.getElementById("revenue-share-input");
 
             const w = parseFloat(wInput?.value ?? "0");
             const b = parseFloat(bInput?.value ?? "0");
-            const capType = capTypeInput?.value ?? "fraction";
-            const capValue = parseFloat(capValueInput?.value ?? "0");
             const length = parseInt(lengthInput?.value ?? "1", 10);
             const contractType = contractTypeInput?.value ?? "buyback";
-            const revenueShare = parseFloat(revenueShareInput?.value ?? "0") || 0.0;
 
             const body = {
                 session_id: sessionId,
                 wholesale_price: w,
                 buyback_price: b,
-                cap_type: capType,
-                cap_value: capValue,
                 length: length,
                 contract_type: contractType,
-                revenue_share: revenueShare,
             };
 
             const submittedDetailsEl = document.getElementById("submitted-details");
@@ -1287,11 +1255,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 submittedDetailsEl.innerHTML = `
                     <div><strong>Wholesale Price (w):</strong> ${w}</div>
                     <div><strong>Buyback Price (b):</strong> ${b}</div>
-                    <div><strong>Cap Type:</strong> ${capType}</div>
-                    <div><strong>Cap Value:</strong> ${capValue}</div>
                     <div><strong>Contract Length (L):</strong> ${length}</div>
                     <div><strong>Contract Type:</strong> ${contractType}</div>
-                    <div><strong>Revenue Share:</strong> ${revenueShare}</div>
                 `;
             }
 
@@ -1642,7 +1607,7 @@ document.addEventListener("DOMContentLoaded", () => {
      * Updates the contract type dropdown based on available types.
      * 
      * Inputs:
-     * - availableTypes: Array of contract type strings ("buyback", "revenue_sharing", "hybrid")
+    * - availableTypes: Array of contract type strings ("buyback")
      * 
      * What happens:
      * - Clears existing dropdown options
@@ -1658,9 +1623,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // Add available types
         const typeLabels = {
-            "buyback": "Buyback",
-            "revenue_sharing": "Revenue Sharing",
-            "hybrid": "Hybrid (Buyback + Share)"
+            "buyback": "Buyback"
         };
         
         availableTypes.forEach(type => {
@@ -1701,28 +1664,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     // Populate form fields
                     const config = data.negotiation_config;
                     const buybackCheckbox = document.getElementById("neg-config-ct-buyback");
-                    const revenueSharingCheckbox = document.getElementById("neg-config-ct-revenue-sharing");
-                    const hybridCheckbox = document.getElementById("neg-config-ct-hybrid");
                     const lengthMinInput = document.getElementById("neg-config-length-min");
                     const lengthMaxInput = document.getElementById("neg-config-length-max");
-                    const capTypeAllowedInput = document.getElementById("neg-config-cap-type-allowed");
-                    const capValueMinInput = document.getElementById("neg-config-cap-value-min");
-                    const capValueMaxInput = document.getElementById("neg-config-cap-value-max");
-                    const revenueShareMinInput = document.getElementById("neg-config-revenue-share-min");
-                    const revenueShareMaxInput = document.getElementById("neg-config-revenue-share-max");
                     const promptTemplateInput = document.getElementById("neg-config-prompt-template");
                     
-                    // Set checkboxes based on available types
                     if (buybackCheckbox) buybackCheckbox.checked = config.contract_types_available.includes("buyback");
-                    if (revenueSharingCheckbox) revenueSharingCheckbox.checked = config.contract_types_available.includes("revenue_sharing");
-                    if (hybridCheckbox) hybridCheckbox.checked = config.contract_types_available.includes("hybrid");
                     if (lengthMinInput) lengthMinInput.value = config.length_min;
                     if (lengthMaxInput) lengthMaxInput.value = config.length_max;
-                    if (capTypeAllowedInput) capTypeAllowedInput.value = config.cap_type_allowed;
-                    if (capValueMinInput) capValueMinInput.value = config.cap_value_min;
-                    if (capValueMaxInput) capValueMaxInput.value = config.cap_value_max;
-                    if (revenueShareMinInput) revenueShareMinInput.value = config.revenue_share_min;
-                    if (revenueShareMaxInput) revenueShareMaxInput.value = config.revenue_share_max;
                     if (promptTemplateInput) promptTemplateInput.value = config.system_prompt_template;
                     
                     addNotification("Negotiation config loaded.", "success");
@@ -1757,11 +1705,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         contract_types_available: contractTypes,
                         length_min: parseInt(document.getElementById("neg-config-length-min")?.value || "1"),
                         length_max: parseInt(document.getElementById("neg-config-length-max")?.value || "10"),
-                        cap_type_allowed: document.getElementById("neg-config-cap-type-allowed")?.value || "fraction",
-                        cap_value_min: parseFloat(document.getElementById("neg-config-cap-value-min")?.value || "0"),
-                        cap_value_max: parseFloat(document.getElementById("neg-config-cap-value-max")?.value || "0.5"),
-                        revenue_share_min: parseFloat(document.getElementById("neg-config-revenue-share-min")?.value || "0"),
-                        revenue_share_max: parseFloat(document.getElementById("neg-config-revenue-share-max")?.value || "1"),
                         system_prompt_template: document.getElementById("neg-config-prompt-template")?.value || "",
                         example_dialog: [],  // Can be extended later if needed
                     },
@@ -1795,60 +1738,23 @@ document.addEventListener("DOMContentLoaded", () => {
      * - Fetches negotiation config from backend
      * - Updates contract type dropdown with available types
      * - Updates length input min/max limits
-     * - Updates cap type dropdown based on allowed types
-     * - Updates cap value and revenue share input limits
+    * - Cap/revenue inputs removed from frontend; only updates types and length limits
      * - Silently fails if config can't be loaded (allows app to work without config)
      */
     async function loadNegotiationConfigOnStartup() {
         try {
             const data = await fetchJsonWithDetail(`${BASE_URL}/config/negotiation`);
             const config = data.negotiation_config;
-            
+
             // Update contract type dropdown
             updateContractTypeDropdown(config.contract_types_available);
-            
+
             // Update length input limits
             const lengthInput = document.getElementById("length-input");
             if (lengthInput) {
                 lengthInput.min = config.length_min;
                 lengthInput.max = config.length_max;
                 lengthInput.value = Math.max(config.length_min, Math.min(parseInt(lengthInput.value) || config.length_min, config.length_max));
-            }
-            
-            // Update cap type dropdown based on config
-            const capTypeSelect = document.getElementById("cap-type-input");
-            if (capTypeSelect) {
-                capTypeSelect.innerHTML = "";
-                if (config.cap_type_allowed === "fraction" || config.cap_type_allowed === "both") {
-                    const option = document.createElement("option");
-                    option.value = "fraction";
-                    option.textContent = "fraction";
-                    option.selected = true;
-                    capTypeSelect.appendChild(option);
-                }
-                if (config.cap_type_allowed === "unit" || config.cap_type_allowed === "both") {
-                    const option = document.createElement("option");
-                    option.value = "unit";
-                    option.textContent = "unit";
-                    if (config.cap_type_allowed === "unit") option.selected = true;
-                    capTypeSelect.appendChild(option);
-                }
-            }
-            
-            // Update cap value input limits
-            const capValueInput = document.getElementById("cap-value-input");
-            if (capValueInput) {
-                capValueInput.min = config.cap_value_min;
-                capValueInput.max = config.cap_value_max;
-                capValueInput.step = "0.01";
-            }
-            
-            // Update revenue share input limits
-            const revenueShareInput = document.getElementById("revenue-share-input");
-            if (revenueShareInput) {
-                revenueShareInput.min = config.revenue_share_min;
-                revenueShareInput.max = config.revenue_share_max;
-                revenueShareInput.step = "0.01";
             }
         } catch (err) {
             console.error("Failed to load negotiation config on startup:", err);
@@ -1890,7 +1796,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         function updateFields() {
             const val = contractTypeSelect.value;
-            // Fields tagged with neg-field-buyback, neg-field-revenue_sharing, neg-field-hybrid
+            // Fields tagged with neg-field-buyback
             document.querySelectorAll(".form-field[class*='neg-field-']").forEach(el => {
                 const classes = Array.from(el.classList);
                 const relevant = classes.some(c => c === `neg-field-${val}`);
