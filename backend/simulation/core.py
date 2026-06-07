@@ -229,22 +229,16 @@ class Contract:
     Attributes:
         wholesale_price: Price buyer pays supplier per unit (w)
         buyback_price: Price supplier pays buyer for returned units (b)
-        cap_type: Type of return cap - "fraction" or "unit"
-        cap_value: Cap value - fraction (0-1) or unit count (B_max)
         length: Total number of rounds contract lasts (L)
         remaining_rounds: Number of rounds left in contract (auto-set to length if None)
-        contract_type: Type of contract - "buyback", "revenue_sharing", or "hybrid"
-        revenue_share: Fraction of sales revenue supplier receives (0-1, for revenue_sharing/hybrid)
+        contract_type: Type of contract - "buyback"
     """
     wholesale_price: float                  # w
     buyback_price: float                    # b
-    cap_type: str                           # "fraction" or "unit"
     length: int                             # number of rounds (L)
-    cap_value: float = 1                     # fixed to 1, ignoring input
     remaining_rounds: int | None = None     # remaining rounds on contract
 
-    contract_type: str = "buyback"          # "buyback", "revenue_sharing", "hybrid"
-    revenue_share: float = 0.2              # ideal fixed revenue share
+    contract_type: str = "buyback"          # "buyback"
 
     def __post_init__(self) -> None:
         """
@@ -290,13 +284,11 @@ class RoundOutput:
         buyback_refund_buyer: Refund from supplier for returns (b * B)
         wholesale_cost_buyer: Cost of purchasing units (w * Q)
         return_shipping_cost_buyer: Cost to ship returns (c_ret * B)
-        revenue_share_payment_buyer: Payment to supplier from revenue share
         wholesale_revenue_supplier: Revenue from selling to buyer (w * Q)
         salvage_revenue_supplier: Revenue from salvaging returns (v_S * B)
         production_cost_supplier: Cost to produce units (c * Q)
         buyback_cost_supplier: Cost to buy back returns (b * B)
         return_handling_cost_supplier: Cost to handle returns (h * B)
-        revenue_share_revenue_supplier: Revenue from revenue share
     """
     # Decision + uncertainty
     order_quantity: int              # Q_t
@@ -322,7 +314,6 @@ class RoundOutput:
     buyback_refund_buyer: float = 0.0              # b * B (refund from supplier)
     wholesale_cost_buyer: float = 0.0              # w * Q
     return_shipping_cost_buyer: float = 0.0        # c_ret * B
-    revenue_share_payment_buyer: float = 0.0        # share * (p * S)
 
     # Supplier-side components (per round)
     wholesale_revenue_supplier: float = 0.0        # w * Q
@@ -330,7 +321,6 @@ class RoundOutput:
     production_cost_supplier: float = 0.0         # c * Q
     buyback_cost_supplier: float = 0.0             # b * B
     return_handling_cost_supplier: float = 0.0     # h * B
-    revenue_share_revenue_supplier: float = 0.0    # share * (p * S)
 
 
 @dataclass
@@ -350,12 +340,9 @@ class RoundSummary:
         supplier_profit: Net profit for supplier
         wholesale_price: Contract wholesale price at time of round
         buyback_price: Contract buyback price at time of round
-        cap_type: Contract cap type at time of round
-        cap_value: Contract cap value at time of round
         contract_length: Total length of contract
         remaining_rounds: Rounds remaining in contract
         contract_type: Type of contract
-        revenue_share: Revenue share percentage
     """
     round_index: int
     order_quantity: int
@@ -372,12 +359,9 @@ class RoundSummary:
     # Contract details for logging
     wholesale_price: float
     buyback_price: float
-    cap_type: str
-    cap_value: float
     contract_length: int
     remaining_rounds: int
     contract_type: str
-    revenue_share: float
 
 
 @dataclass
@@ -463,15 +447,15 @@ def simulate_round(contract: Contract, round_input: RoundInput) -> RoundOutput:
     Simulates one round of the supply chain game under a given contract.
 
     Inputs:
-        contract: Contract object containing contract terms (prices, caps, type, etc.).
+        contract: Contract object containing contract terms (prices, type, etc.).
         round_input: RoundInput object containing order quantity and realized demand.
 
     What happens:
         Gets current economic parameters from config.
         Calculates sales (min of order quantity and demand).
         Calculates unsold units.
-        Based on contract type (buyback/revenue_sharing/hybrid):
-            - Calculates returns based on cap constraints
+        Based on contract type (buyback):
+            - Calculates returns (buyer returns units to supplier under buyback)
             - Calculates leftovers (unsold minus returns)
             - Calculates all revenue and cost components for buyer and supplier
             - Calculates profits for both parties
@@ -487,7 +471,7 @@ def simulate_round(contract: Contract, round_input: RoundInput) -> RoundOutput:
     Context:
         Core simulation function - calculates one round's results.
         Called by simulate_game_round() for each order placed.
-        Supports three contract types: buyback, revenue_sharing, hybrid.
+        Supports buyback contracts only.
         All economic calculations happen here based on contract terms.
     """
     params = get_current_params()
@@ -509,31 +493,23 @@ def simulate_round(contract: Contract, round_input: RoundInput) -> RoundOutput:
     buyback_refund_buyer = 0.0
     wholesale_cost_buyer = 0.0
     return_shipping_cost_buyer = 0.0
-    revenue_share_payment_buyer = 0.0
-
     wholesale_revenue_supplier = 0.0
     salvage_revenue_supplier = 0.0
     production_cost_supplier = 0.0
     buyback_cost_supplier = 0.0
     return_handling_cost_supplier = 0.0
-    revenue_share_revenue_supplier = 0.0
 
     ct = contract.contract_type or "buyback"
 
     # Buyback contract
     if ct == "buyback":
-        # Determine returns based on contract cap
-        if contract.cap_type == "fraction":
-            cap = contract.cap_value * Q   # φ * Q
-        else:  # "unit"
-            cap = contract.cap_value       # B_max
-
-        returns = min(unsold, int(cap))
-        leftovers = unsold - returns
+        # All unsold units are returned under buyback terms
+        returns = unsold
+        leftovers = 0
 
         # Buyer side calculations
         retail_revenue = params.retail_price * sales
-        salvage_revenue_buyer = params.buyer_salvage_value * leftovers
+        salvage_revenue_buyer = 0.0
         buyback_refund_buyer = contract.buyback_price * returns
         wholesale_cost_buyer = contract.wholesale_price * Q
         return_shipping_cost_buyer = params.return_shipping_buyer * returns
@@ -561,86 +537,7 @@ def simulate_round(contract: Contract, round_input: RoundInput) -> RoundOutput:
             - return_handling_cost_supplier
         )
 
-    # Revenue-sharing contract
-    elif ct == "revenue_sharing":
-        # No returns; buyer keeps unsold, only salvage
-        returns = 0
-        leftovers = unsold
-
-        share = max(0.0, min(contract.revenue_share, 1.0))  # Clamp to [0,1]
-
-        # Buyer side calculations
-        retail_revenue = params.retail_price * sales
-        revenue_share_payment_buyer = share * retail_revenue
-        salvage_revenue_buyer = params.buyer_salvage_value * leftovers
-        wholesale_cost_buyer = contract.wholesale_price * Q
-
-        buyer_profit = (
-            retail_revenue
-            - revenue_share_payment_buyer
-            + salvage_revenue_buyer
-            - wholesale_cost_buyer
-        )
-
-        # Supplier side calculations
-        wholesale_revenue_supplier = contract.wholesale_price * Q
-        revenue_share_revenue_supplier = share * retail_revenue
-        production_cost_supplier = params.supplier_cost * Q
-
-        supplier_profit = (
-            wholesale_revenue_supplier
-            + revenue_share_revenue_supplier
-            - production_cost_supplier
-        )
-
-    # Hybrid: Buyback + Revenue Sharing
-    elif ct == "hybrid":
-        # Buyback on unsold units
-        if contract.cap_type == "fraction":
-            cap = contract.cap_value * Q
-        else:
-            cap = contract.cap_value
-
-        returns = min(unsold, int(cap))
-        leftovers = unsold - returns
-
-        share = max(0.0, min(contract.revenue_share, 1.0))
-
-        # Buyer side calculations
-        retail_revenue = params.retail_price * sales
-        revenue_share_payment_buyer = share * retail_revenue
-        salvage_revenue_buyer = params.buyer_salvage_value * leftovers
-        buyback_refund_buyer = contract.buyback_price * returns
-        wholesale_cost_buyer = contract.wholesale_price * Q
-        return_shipping_cost_buyer = params.return_shipping_buyer * returns
-
-        buyer_profit = (
-            retail_revenue
-            - revenue_share_payment_buyer
-            + salvage_revenue_buyer
-            + buyback_refund_buyer
-            - wholesale_cost_buyer
-            - return_shipping_cost_buyer
-        )
-
-        # Supplier side calculations
-        wholesale_revenue_supplier = contract.wholesale_price * Q
-        revenue_share_revenue_supplier = share * retail_revenue
-        salvage_revenue_supplier = params.supplier_salvage_value * returns
-        production_cost_supplier = params.supplier_cost * Q
-        buyback_cost_supplier = contract.buyback_price * returns
-        return_handling_cost_supplier = params.return_handling_supplier * returns
-
-        supplier_profit = (
-            wholesale_revenue_supplier
-            + revenue_share_revenue_supplier
-            + salvage_revenue_supplier
-            - production_cost_supplier
-            - buyback_cost_supplier
-            - return_handling_cost_supplier
-        )
-
-    # Fallback: simple wholesale (no returns, no revenue sharing)
+    # Fallback: simple wholesale or unsupported contract types
     else:
         returns = 0
         leftovers = unsold
@@ -665,13 +562,11 @@ def simulate_round(contract: Contract, round_input: RoundInput) -> RoundOutput:
     buyer_cost = (
         wholesale_cost_buyer
         + return_shipping_cost_buyer
-        + revenue_share_payment_buyer
     )
 
     supplier_revenue = (
         wholesale_revenue_supplier
         + salvage_revenue_supplier
-        + revenue_share_revenue_supplier
     )
     supplier_cost = (
         production_cost_supplier
@@ -700,13 +595,11 @@ def simulate_round(contract: Contract, round_input: RoundInput) -> RoundOutput:
         buyback_refund_buyer=buyback_refund_buyer,
         wholesale_cost_buyer=wholesale_cost_buyer,
         return_shipping_cost_buyer=return_shipping_cost_buyer,
-        revenue_share_payment_buyer=revenue_share_payment_buyer,
         wholesale_revenue_supplier=wholesale_revenue_supplier,
         salvage_revenue_supplier=salvage_revenue_supplier,
         production_cost_supplier=production_cost_supplier,
         buyback_cost_supplier=buyback_cost_supplier,
         return_handling_cost_supplier=return_handling_cost_supplier,
-        revenue_share_revenue_supplier=revenue_share_revenue_supplier,
     )
 
 
@@ -776,12 +669,9 @@ def simulate_game_round(state: GameState, order_quantity: int) -> tuple[RoundOut
             # Contract details for logging
             wholesale_price=state.contract.wholesale_price,
             buyback_price=state.contract.buyback_price,
-            cap_type=state.contract.cap_type,
-            cap_value=state.contract.cap_value,
             contract_length=state.contract.length,
             remaining_rounds=state.contract.remaining_rounds,
             contract_type=state.contract.contract_type,
-            revenue_share=state.contract.revenue_share,
         )
     )
 
@@ -841,8 +731,6 @@ if __name__ == "__main__":
     contract = Contract(
         wholesale_price=10,
         buyback_price=4,
-        cap_type="fraction",
-        cap_value=0.3,
         length=3
     )
     state = GameState(

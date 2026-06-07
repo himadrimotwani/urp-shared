@@ -128,14 +128,9 @@ class NegotiationConfigData(BaseModel):
     Configuration for negotiation system constraints and AI behavior.
     
     Fields:
-        contract_types_available: List of allowed contract types (e.g., ["buyback", "revenue_sharing"])
+        contract_types_available: List of allowed contract types (e.g., ["buyback"])
         length_min: Minimum contract length in rounds
         length_max: Maximum contract length in rounds
-        cap_type_allowed: "fraction", "unit", or "both" - which cap types students can use
-        cap_value_min: Minimum cap value (fraction or units)
-        cap_value_max: Maximum cap value (fraction or units)
-        revenue_share_min: Minimum revenue share percentage (0.0 to 1.0)
-        revenue_share_max: Maximum revenue share percentage (0.0 to 1.0)
         system_prompt_template: Template for AI supplier's system prompt
         example_dialog: Example conversation for AI training (list of dicts with role/content)
     
@@ -153,11 +148,6 @@ class NegotiationConfigData(BaseModel):
     contract_types_available: List[str]
     length_min: int
     length_max: int
-    cap_type_allowed: str  # "fraction", "unit", or "both"
-    cap_value_min: float
-    cap_value_max: float
-    revenue_share_min: float
-    revenue_share_max: float
     system_prompt_template: str
     example_dialog: List[Dict[str, str]] = Field(default_factory=list)
 
@@ -208,12 +198,9 @@ class ContractData(BaseModel):
     Fields:
         wholesale_price: Price per unit buyer pays to supplier (w)
         buyback_price: Price per unit supplier pays for returns (b)
-        cap_type: "fraction" or "unit" - how return cap is specified
-        cap_value: Cap value - fraction (0.0-1.0) or unit count (φ or B_max)
         length: Total contract length in rounds (L)
         remaining_rounds: Number of rounds left on this contract
-        contract_type: "buyback", "revenue_sharing", or "hybrid"
-        revenue_share: Fraction of sales revenue shared with supplier (0.0-1.0)
+        contract_type: "buyback"
     
     Usage:
         - Used in all game state responses (GameStateResponse)
@@ -228,12 +215,9 @@ class ContractData(BaseModel):
     """
     wholesale_price: float          # w
     buyback_price: float            # b
-    cap_type: str                   # "fraction" or "unit"
-    cap_value: float                # φ or B_max
     length: int                     # contract length in rounds
     remaining_rounds: int           # remaining rounds on this contract
     contract_type: str = "buyback"
-    revenue_share: float = 0.0
 
 
 class RoundOutputData(BaseModel):
@@ -256,10 +240,10 @@ class RoundOutputData(BaseModel):
     
     Fields (Detailed Components - Optional):
         Buyer-side: retail_revenue, salvage_revenue_buyer, buyback_refund_buyer,
-                    wholesale_cost_buyer, return_shipping_cost_buyer, revenue_share_payment_buyer
+                    wholesale_cost_buyer, return_shipping_cost_buyer
         Supplier-side: wholesale_revenue_supplier, salvage_revenue_supplier,
                        production_cost_supplier, buyback_cost_supplier,
-                       return_handling_cost_supplier, revenue_share_revenue_supplier
+                       return_handling_cost_supplier
     
     Usage:
         - Used in `/game/order` endpoint response (OrderResponse)
@@ -294,7 +278,6 @@ class RoundOutputData(BaseModel):
     buyback_refund_buyer: float | None = None
     wholesale_cost_buyer: float | None = None
     return_shipping_cost_buyer: float | None = None
-    revenue_share_payment_buyer: float | None = None
 
     # Supplier-side components
     wholesale_revenue_supplier: float | None = None
@@ -302,7 +285,6 @@ class RoundOutputData(BaseModel):
     production_cost_supplier: float | None = None
     buyback_cost_supplier: float | None = None
     return_handling_cost_supplier: float | None = None
-    revenue_share_revenue_supplier: float | None = None
 
 
 class RoundSummaryData(BaseModel):
@@ -321,8 +303,7 @@ class RoundSummaryData(BaseModel):
         supplier_profit: Net profit for supplier
     
     Fields (Contract Details - for logging, not shown to player):
-        wholesale_price, buyback_price, cap_type, cap_value, contract_length,
-        remaining_rounds, contract_type, revenue_share
+            wholesale_price, buyback_price, contract_length,
     
     Usage:
         - Used in GameStateResponse.rounds (list of all completed rounds)
@@ -351,12 +332,9 @@ class RoundSummaryData(BaseModel):
     # Contract details for logging (not shown to player in frontend)
     wholesale_price: float
     buyback_price: float
-    cap_type: str
-    cap_value: float
     contract_length: int
     remaining_rounds: int
     contract_type: str
-    revenue_share: float
 
 
 class NegotiationHistory(BaseModel):
@@ -559,11 +537,8 @@ class NegotiateRequest(BaseModel):
         session_id: Unique identifier for the game session
         wholesale_price: Price per unit buyer proposes to pay (w)
         buyback_price: Price per unit supplier pays for returns (b)
-        cap_type: "fraction" or "unit" - how return cap is specified
-        cap_value: Cap value - fraction (0.0-1.0) or unit count
         length: Contract length in rounds (L)
-        contract_type: "buyback", "revenue_sharing", or "hybrid" (default: "buyback")
-        revenue_share: Fraction of sales revenue shared with supplier, 0.0-1.0 (default: 0.0)
+        contract_type: "buyback" (default: "buyback")
     
     Usage:
         - Used in `/game/negotiate` endpoint (POST)
@@ -578,11 +553,8 @@ class NegotiateRequest(BaseModel):
     session_id: str
     wholesale_price: float
     buyback_price: float
-    cap_type: str
-    cap_value: float
     length: int
-    contract_type: str = "buyback"          # "buyback", "revenue_sharing", "hybrid"
-    revenue_share: float = 0.0              # used for revenue-sharing/hybrid
+    contract_type: str = "buyback"          # "buyback"
 
 
 class NegotiateResponse(BaseModel):

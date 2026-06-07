@@ -35,7 +35,7 @@ def negotiate(request: NegotiateRequest) -> NegotiateResponse:
     Inputs:
         request: NegotiateRequest containing:
             - session_id: Game session identifier
-            - All contract terms (wholesale_price, buyback_price, length, cap_type, cap_value, contract_type, revenue_share)
+            - All contract terms (wholesale_price, buyback_price, length, contract_type)
     
     What happens:
         Validates session exists and game is not over.
@@ -43,7 +43,7 @@ def negotiate(request: NegotiateRequest) -> NegotiateResponse:
         Saves any previous negotiation to history before starting new one.
         Clears previous negotiation state (chat history, draft contract).
         Stores the initial contract type (cannot be changed during negotiation).
-        Validates proposal against negotiation config (length ranges, cap types, etc.).
+        Validates proposal against negotiation config (length ranges, etc.).
         Builds a Contract object from the proposal.
         Evaluates proposal using AI (accept or reject only, no counters).
         If accepted: makes contract active, saves negotiation to history, clears negotiation state.
@@ -117,47 +117,17 @@ def negotiate(request: NegotiateRequest) -> NegotiateResponse:
             detail=f"Contract length must be between {neg_config.length_min} and {neg_config.length_max} rounds.",
         )
     
-    # Check cap type is allowed
-    if neg_config.cap_type_allowed == "fraction" and request.cap_type != "fraction":
-        raise HTTPException(
-            status_code=400,
-            detail="Only 'fraction' cap type is allowed.",
-        )
-    elif neg_config.cap_type_allowed == "unit" and request.cap_type != "unit":
-        raise HTTPException(
-            status_code=400,
-            detail="Only 'unit' cap type is allowed.",
-        )
-    
-    # Check cap value is within range
-    if request.cap_value < neg_config.cap_value_min or request.cap_value > neg_config.cap_value_max:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Cap value must be between {neg_config.cap_value_min} and {neg_config.cap_value_max}.",
-        )
-    
-    # Check revenue share is within range (if applicable)
-    if request.contract_type in ("revenue_sharing", "hybrid"):
-        if request.revenue_share < neg_config.revenue_share_min or request.revenue_share > neg_config.revenue_share_max:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Revenue share must be between {neg_config.revenue_share_min} and {neg_config.revenue_share_max}.",
-            )
-    
     # Build a temporary Contract object from buyer's proposal
     # This is used for evaluation - will become active if accepted
     proposed = Contract(
         wholesale_price=request.wholesale_price,
         buyback_price=request.buyback_price,
-        cap_type=request.cap_type,
-        cap_value=request.cap_value,
         length=request.length,
         contract_type=request.contract_type,
-        revenue_share=request.revenue_share,
     )
     
     # Store the initial contract type - it cannot be changed during negotiation
-    # This ensures student can't switch from buyback to revenue_sharing mid-conversation
+    # This ensures student can't switch contract type after the initial proposal
     state.initial_contract_type = request.contract_type
 
     # Evaluate the proposal using AI (returns accept or reject, never counter on initial proposal)
