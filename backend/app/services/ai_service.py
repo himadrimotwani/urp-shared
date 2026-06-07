@@ -70,7 +70,7 @@ def extract_from_malformed_json(json_str: str) -> dict[str, Any] | None:
     
     What happens:
         Uses regex patterns to find key-value pairs even if JSON syntax is broken.
-        Looks for contract fields: wholesale_price, buyback_price, contract_length, cap_value, etc.
+        Looks for contract fields: wholesale_price, buyback_price, contract_length, etc.
         Converts numeric values to floats.
         Keeps string values (like contract_type) as strings.
         Returns None if no valid terms found.
@@ -91,16 +91,14 @@ def extract_from_malformed_json(json_str: str) -> dict[str, Any] | None:
         "buyback_price": r'buyback_price["\s]*:[\s]*(\d+(?:\.\d+)?)',
         "contract_length": r'contract_length["\s]*:[\s]*(\d+)',
         "length": r'"length"["\s]*:[\s]*(\d+)',
-        "cap_value": r'cap_value["\s]*:[\s]*(\d+(?:\.\d+)?)',
-        "cap_type": r'cap_type["\s]*:[\s]*"([^"]+)"',
+
         "contract_type": r'contract_type["\s]*:[\s]*"([^"]+)"',
-        "revenue_share": r'revenue_share["\s]*:[\s]*(\d+(?:\.\d+)?)',
     }
     
     for key, pattern in patterns.items():
         match = re.search(pattern, json_str, re.IGNORECASE)
         if match:
-            if key in ("cap_type", "contract_type"):
+            if key == "contract_type":
                 result[key] = match.group(1)
             else:
                 try:
@@ -290,15 +288,11 @@ DEMAND HISTORY:
 NEGOTIATION CONSTRAINTS:
 - Contract type (fixed): {fixed_contract_type}
 - Contract length: {neg_config.length_min} to {neg_config.length_max} rounds
-- Cap type allowed: {neg_config.cap_type_allowed}
-- Cap value range: {neg_config.cap_value_min} to {neg_config.cap_value_max}
-- Revenue share range: {neg_config.revenue_share_min:.0%} to {neg_config.revenue_share_max:.0%}
-
 {game_context}
 
 NEGOTIATION GUIDELINES:
 1. Be professional and collaborative - aim for win-win agreements
-2. Discuss specific terms: wholesale price, buyback price, contract length, cap settings, revenue share
+2. Discuss specific terms: wholesale price, buyback price, contract length
 3. Explain your reasoning based on costs, risks, and market conditions
 4. Ask questions to understand the buyer's priorities and constraints
 5. Make counter-proposals when terms don't work for you
@@ -342,10 +336,7 @@ Based on the entire conversation, extract the final agreed-upon terms and respon
     "wholesale_price": [final agreed wholesale price as number],
     "buyback_price": [final agreed buyback price as number], 
     "contract_length": [final agreed length as number],
-    "cap_type": "[final agreed cap type: fraction or unit]",
-    "cap_value": [final agreed cap value as number],
-    "contract_type": "{initial_contract_type or 'buyback'}",
-    "revenue_share": [final agreed revenue share as number, 0.0 to 1.0]
+    "contract_type": "{initial_contract_type or 'buyback'}"
   }},
   "negotiation_complete": true
 }}
@@ -460,22 +451,12 @@ If you cannot determine all terms from the conversation, set "negotiation_comple
                 contract_length = json_contract.get("contract_length") or json_contract.get("length") or neg_config.length_min
                 contract_type_to_use = initial_ct or "buyback"
                 
-                # Determine cap_type based on configuration
-                default_cap_type = "fraction"
-                if neg_config.cap_type_allowed == "unit":
-                    default_cap_type = "unit"
-                elif neg_config.cap_type_allowed == "both":
-                    default_cap_type = json_contract.get("cap_type", "fraction")
-                
                 # Create Contract object from JSON data
                 draft_contract = Contract(
                     wholesale_price=float(json_contract.get("wholesale_price", 0)),
                     buyback_price=float(json_contract.get("buyback_price", 0)),
-                    cap_type=json_contract.get("cap_type", default_cap_type),
-                    cap_value=float(json_contract.get("cap_value", neg_config.cap_value_max)),
                     length=int(contract_length),
                     contract_type=contract_type_to_use,
-                    revenue_share=float(json_contract.get("revenue_share", neg_config.revenue_share_min)),
                 )
                 
                 # Validate and clamp contract values to ensure they're within allowed ranges
@@ -483,20 +464,9 @@ If you cannot determine all terms from the conversation, set "negotiation_comple
                     # Clamp contract length to valid range
                     draft_contract.length = max(neg_config.length_min, min(draft_contract.length, neg_config.length_max))
                     
-                    # Clamp cap_value based on cap_type
-                    if draft_contract.cap_type == "fraction":
-                        draft_contract.cap_value = max(neg_config.cap_value_min, min(draft_contract.cap_value, neg_config.cap_value_max))
-                    elif draft_contract.cap_type == "unit":
-                        draft_contract.cap_value = max(neg_config.cap_value_min, draft_contract.cap_value)
-                    
-                    # Clamp revenue_share to valid range
-                    draft_contract.revenue_share = max(neg_config.revenue_share_min, min(draft_contract.revenue_share, neg_config.revenue_share_max))
-                    
-                    # Validate contract_type and cap_type are valid values
-                    if draft_contract.contract_type not in ("buyback", "revenue_sharing", "hybrid"):
+                    # Validate contract_type is valid
+                    if draft_contract.contract_type not in ("buyback",):
                         draft_contract.contract_type = "buyback"
-                    if draft_contract.cap_type not in ("fraction", "unit"):
-                        draft_contract.cap_type = "fraction"
                 else:
                     # Invalid contract values - discard it
                     print(f"Invalid contract from JSON: wholesale={draft_contract.wholesale_price}, buyback={draft_contract.buyback_price}")

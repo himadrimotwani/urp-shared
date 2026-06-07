@@ -29,9 +29,7 @@ def load_negotiation_config() -> NegotiationConfigData:
         Returns a NegotiationConfigData object containing:
         - Available contract types
         - Length ranges (min/max)
-        - Cap value ranges (min/max)
         - Revenue share ranges (min/max)
-        - Allowed cap types
         - System prompt template
         - Example dialog
     
@@ -56,14 +54,9 @@ def load_negotiation_config() -> NegotiationConfigData:
     
     # Return default config
     default_config = NegotiationConfigData(
-        contract_types_available=["buyback", "revenue_sharing", "hybrid"],
+        contract_types_available=["buyback"],
         length_min=1,
         length_max=10,
-        cap_type_allowed="fraction",
-        cap_value_min=0.0,
-        cap_value_max=0.5,
-        revenue_share_min=0.0,
-        revenue_share_max=1.0,
         system_prompt_template="",
         example_dialog=[],
     )

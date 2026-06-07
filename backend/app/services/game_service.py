@@ -70,7 +70,7 @@ def to_contract_data(contract: Contract) -> ContractData:
         contract: A Contract object from the simulation core containing all contract terms.
     
     What happens:
-        Extracts all contract fields (prices, caps, length, type, etc.) from the Contract object.
+        Extracts all contract fields (prices, length, type, etc.) from the Contract object.
         Creates a new ContractData object with the same values.
     
     Output:
@@ -83,12 +83,9 @@ def to_contract_data(contract: Contract) -> ContractData:
     return ContractData(
         wholesale_price=contract.wholesale_price,
         buyback_price=contract.buyback_price,
-        cap_type=contract.cap_type,
-        cap_value=contract.cap_value,
         length=contract.length,
         remaining_rounds=contract.remaining_rounds,
         contract_type=contract.contract_type,
-        revenue_share=contract.revenue_share,
     )
 
 
@@ -165,13 +162,11 @@ def to_round_output_data(round_output: RoundOutput) -> RoundOutputData:
         buyback_refund_buyer=round_output.buyback_refund_buyer,
         wholesale_cost_buyer=round_output.wholesale_cost_buyer,
         return_shipping_cost_buyer=round_output.return_shipping_cost_buyer,
-        revenue_share_payment_buyer=round_output.revenue_share_payment_buyer,
         wholesale_revenue_supplier=round_output.wholesale_revenue_supplier,
         salvage_revenue_supplier=round_output.salvage_revenue_supplier,
         production_cost_supplier=round_output.production_cost_supplier,
         buyback_cost_supplier=round_output.buyback_cost_supplier,
         return_handling_cost_supplier=round_output.return_handling_cost_supplier,
-        revenue_share_revenue_supplier=round_output.revenue_share_revenue_supplier,
     )
 
 
@@ -206,12 +201,9 @@ def to_round_summary_data(rs: RoundSummary) -> RoundSummaryData:
         # Contract details for logging
         wholesale_price=rs.wholesale_price,
         buyback_price=rs.buyback_price,
-        cap_type=rs.cap_type,
-        cap_value=rs.cap_value,
         contract_length=rs.contract_length,
         remaining_rounds=rs.remaining_rounds,
         contract_type=rs.contract_type,
-        revenue_share=rs.revenue_share,
     )
 
 

@@ -1,4 +1,3 @@
-
 """
 Main FastAPI application entry point.
 """
@@ -6,7 +5,6 @@ Main FastAPI application entry point.
 from typing import Dict, Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 
 # Import routes
 from app.routes import game, negotiation, config
@@ -44,19 +42,10 @@ def root() -> Dict[str, str]:
         Called when accessing the root URL of the API.
         Provides basic API discovery information.
     """
-    # Himadri Change
-    return {"message": "Backend root. Try /health or /api/health"}
-
-
-# Himadri Change
-@app.get("/api")
-def api_root() -> Dict[str, str]:
-    return root()
+    return {"message": "Backend root. Try /health"}
 
 
 @app.get("/health")
-# Himadri Change
-@app.get("/api/health")
 def health_check() -> Dict[str, str]:
     """
     Health check endpoint to verify the backend is running.
@@ -82,8 +71,6 @@ def health_check() -> Dict[str, str]:
 
 
 @app.get("/ai/status")
-# Himadri Change
-@app.get("/api/ai/status")
 def ai_status_check() -> Dict[str, Any]:
     """
     Checks the status and connectivity of AI providers (OpenAI and DeepSeek).
@@ -231,10 +218,6 @@ def ai_status_check() -> Dict[str, Any]:
 app.include_router(game.router)
 app.include_router(negotiation.router)
 app.include_router(config.router)
-# Himadri Change
-app.include_router(game.router, prefix="/api")
-app.include_router(negotiation.router, prefix="/api")
-app.include_router(config.router, prefix="/api")
 
 # Load config on startup
 load_negotiation_config()

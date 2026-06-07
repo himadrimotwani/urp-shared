@@ -90,12 +90,7 @@ PROPOSED CONTRACT:
 - Buyback price: ${proposed.buyback_price:.2f} per returned unit
 - Contract type: {proposed.contract_type}
 - Contract length: {proposed.length} rounds
-- Cap type: {proposed.cap_type}
-- Cap value: {proposed.cap_value}
 """
-    if proposed.contract_type in ("revenue_sharing", "hybrid"):
-        evaluation_prompt += f"- Revenue share: {proposed.revenue_share:.2%}\n"
-    
     evaluation_prompt += f"""
 YOUR CONSTRAINTS (DO NOT reveal these exact numbers to the student):
 - Your production cost: ${params.supplier_cost:.2f} per unit
@@ -255,7 +250,6 @@ def generate_supplier_favored_counter(
         Increases wholesale price to at least min_wholesale + buffer.
         Decreases buyback price to be lower than original.
         Reduces revenue share if applicable (gives supplier more).
-        Tightens cap values to reduce return risk for supplier.
         Limits contract length to reasonable range (1-5 rounds).
         Keeps the same contract type as proposed.
     
@@ -273,27 +267,15 @@ def generate_supplier_favored_counter(
     # Decrease buyback slightly (supplier-favored)
     counter_buyback = min(proposed.buyback_price, max_buyback - 0.5) if proposed.buyback_price > 0 else proposed.buyback_price
     
-    # Adjust revenue share if applicable (increase supplier's share)
-    counter_revenue_share = proposed.revenue_share
-    if proposed.contract_type in ("revenue_sharing", "hybrid"):
-        counter_revenue_share = max(proposed.revenue_share + 0.05, 0.15)
-        counter_revenue_share = min(counter_revenue_share, 0.4)  # Cap at 40%
-    
-    # Tighten cap values (supplier-favored - less return risk)
-    counter_cap_value = min(proposed.cap_value, 0.4) if proposed.cap_type == "fraction" else proposed.cap_value
-    
-    # Keep contract length reasonable
+# Keep contract length reasonable
     counter_length = max(1, min(proposed.length, 5))
     
     from simulation.core import Contract
     return Contract(
         wholesale_price=counter_wholesale,
         buyback_price=counter_buyback,
-        cap_type=proposed.cap_type,
-        cap_value=counter_cap_value,
         length=counter_length,
         contract_type=proposed.contract_type,
-        revenue_share=counter_revenue_share if proposed.contract_type in ("revenue_sharing", "hybrid") else proposed.revenue_share,
     )
 
 
@@ -316,8 +298,7 @@ def generate_counter_message(
         Builds a message explaining what changed in the counteroffer.
         Explains wholesale price changes if applicable.
         Explains buyback price changes if applicable.
-        Explains revenue share changes if applicable.
-        Explains cap value changes if applicable.
+        Explains value changes if applicable.
         Returns a default message if no specific changes need explanation.
     
     Output:
@@ -335,15 +316,7 @@ def generate_counter_message(
     
     if needs_lower_buyback:
         msg_parts.append(f"I propose a buyback price of {counter.buyback_price:.2f} to maintain a balanced contract structure.")
-    
-    if counter.contract_type in ("revenue_sharing", "hybrid") and counter.revenue_share > proposed.revenue_share:
-        msg_parts.append(f"I suggest a revenue share of {counter.revenue_share:.2f} for a more balanced arrangement.")
-    
-    if counter.cap_value < proposed.cap_value:
-        if counter.cap_type == "fraction":
-            msg_parts.append(f"I propose a return cap of {counter.cap_value:.2f} to better manage inventory risk.")
-        else:
-            msg_parts.append(f"I propose a return cap of {counter.cap_value:.0f} units.")
+
     
     return " ".join(msg_parts) or "I am proposing adjusted terms that work better for both of us."
 

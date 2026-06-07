@@ -76,11 +76,8 @@ def start_game(request: GameStartRequest) -> GameStartResponse:
     contract = Contract(
         wholesale_price=0,
         buyback_price=0,
-        cap_type="fraction",
-        cap_value=0,
         length=0,
         contract_type="buyback",
-        revenue_share=0.0,
     )
 
     # per-session copy (updates list on simulated rounds)

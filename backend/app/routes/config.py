@@ -136,9 +136,6 @@ def update_negotiation_config(request: UpdateNegotiationConfigRequest) -> Negoti
             - negotiation_config: NegotiationConfigData with all settings
             - contract_types_available: List of allowed contract types
             - length_min, length_max: Contract length range
-            - cap_type_allowed: "fraction" or "unit"
-            - cap_value_min, cap_value_max: Cap value range
-            - revenue_share_min, revenue_share_max: Revenue share range
             - system_prompt_template: AI prompt template
             - example_dialog: Example conversation for AI
     
@@ -166,20 +163,10 @@ def update_negotiation_config(request: UpdateNegotiationConfigRequest) -> Negoti
         raise HTTPException(status_code=400, detail="length_min must be at least 1")
     if config.length_max < config.length_min:
         raise HTTPException(status_code=400, detail="length_max must be >= length_min")
-    if config.cap_type_allowed not in ("fraction", "unit", "both"):
-        raise HTTPException(status_code=400, detail="cap_type_allowed must be 'fraction', 'unit', or 'both'")
-    if config.cap_value_min < 0:
-        raise HTTPException(status_code=400, detail="cap_value_min must be >= 0")
-    if config.cap_value_max < config.cap_value_min:
-        raise HTTPException(status_code=400, detail="cap_value_max must be >= cap_value_min")
-    if config.revenue_share_min < 0 or config.revenue_share_min > 1:
-        raise HTTPException(status_code=400, detail="revenue_share_min must be between 0 and 1")
-    if config.revenue_share_max < config.revenue_share_min or config.revenue_share_max > 1:
-        raise HTTPException(status_code=400, detail="revenue_share_max must be between revenue_share_min and 1")
     if not config.contract_types_available:
         raise HTTPException(status_code=400, detail="At least one contract type must be available")
     for ct in config.contract_types_available:
-        if ct not in ("buyback", "revenue_sharing", "hybrid"):
+        if ct != "buyback":
             raise HTTPException(status_code=400, detail=f"Invalid contract type: {ct}")
     
     # Save to file
