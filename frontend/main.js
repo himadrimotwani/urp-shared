@@ -1398,7 +1398,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                 } catch (err) {
                     console.error(err);
-                    addChatMessage("supplier", "I'm having trouble processing that. Could you rephrase?");
+                    addChatMessage("supplier", `Chat request failed: ${err.message}`);
                     addNotification("Chat error: " + err.message, "error");
                 }
             });
