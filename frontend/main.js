@@ -29,7 +29,7 @@ let sessionId = null;     // Current game session_id
 let currentState = null;  // Latest GameStateResponse from backend
 
 document.addEventListener("DOMContentLoaded", () => {
-    const BASE_URL = "/api";;
+    const BASE_URL = "/api";
 
     // ================================
     // DOM Element References
