@@ -29,7 +29,7 @@ let sessionId = null;     // Current game session_id
 let currentState = null;  // Latest GameStateResponse from backend
 
 document.addEventListener("DOMContentLoaded", () => {
-    const BASE_URL = "http://127.0.0.1:8000";
+    const BASE_URL = "/api";
 
     // ================================
     // DOM Element References
