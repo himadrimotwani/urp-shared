@@ -297,11 +297,11 @@ def get_game_summary(session_id: str) -> GameSummary:
     # Convert negotiation history to schema format
     negotiation_history_data = [
         NegotiationHistory(
-            chat_messages=neg["chat_messages"],
-            final_decision=neg["final_decision"],
+            #chat_messages=neg["chat_messages"],
+            #final_decision=neg["final_decision"],
             final_contract=neg["final_contract"],
-            start_time=neg.get("start_time"),
-            end_time=neg.get("end_time"),
+            #start_time=neg.get("start_time"),
+            #end_time=neg.get("end_time"),
         )
         for neg in state.negotiation_history
     ]
