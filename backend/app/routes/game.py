@@ -256,55 +256,56 @@ def get_game_summary(session_id: str) -> GameSummary:
     cumulative_buyer_profit = state.cumulative_buyer_profit
     cumulative_supplier_profit = state.cumulative_supplier_profit
 
-    average_demand = (
-        total_demand / total_rounds_played if total_rounds_played > 0 else 0.0
-    )
+    #average_demand = (
+    #    total_demand / total_rounds_played if total_rounds_played > 0 else 0.0
+    #)
 
     fill_rate = (total_sales / total_demand) if total_demand > 0 else 0.0
     return_rate = (total_returns / total_sales) if total_sales > 0 else 0.0
-    leftover_rate = (
-        total_leftovers / (total_sales + total_leftovers)
-        if (total_sales + total_leftovers) > 0
-        else 0.0
-    )
+    #leftover_rate = (
+    #    total_leftovers / (total_sales + total_leftovers)
+    #    if (total_sales + total_leftovers) > 0
+    #    else 0.0
+    #)
 
     rounds_data = [to_round_summary_data(rs) for rs in state.round_summaries]
     
     # Save any ongoing negotiation to history before game ends
     # Only save if game ended naturally (not early), since end_game_early already saves them
-    from datetime import datetime
-    if not state.ended_early and (state.negotiation_chat_history or state.negotiation_draft_contract):
-        # Check if this negotiation was already saved to avoid duplicates
-        current_start_time = getattr(state, "_current_negotiation_start_time", None)
-        already_saved = False
-        if state.negotiation_history and current_start_time:
-            last_neg = state.negotiation_history[-1]
-            # Check if same start_time and same chat messages (same negotiation)
-            if (last_neg.get("start_time") == current_start_time and
-                last_neg.get("chat_messages") == list(state.negotiation_chat_history)):
-                already_saved = True
+    
+    # from datetime import datetime
+    # if not state.ended_early and (state.negotiation_chat_history or state.negotiation_draft_contract):
+    #     # Check if this negotiation was already saved to avoid duplicates
+    #     current_start_time = getattr(state, "_current_negotiation_start_time", None)
+    #     already_saved = False
+    #     if state.negotiation_history and current_start_time:
+    #         last_neg = state.negotiation_history[-1]
+    #         # Check if same start_time and same chat messages (same negotiation)
+    #         if (last_neg.get("start_time") == current_start_time and
+    #             last_neg.get("chat_messages") == list(state.negotiation_chat_history)):
+    #             already_saved = True
         
-        if not already_saved:
-            ongoing_negotiation = {
-                "chat_messages": list(state.negotiation_chat_history),
-                "final_decision": "ongoing" if state.negotiation_draft_contract else "rejected",
-                "final_contract": to_contract_data(state.negotiation_draft_contract) if state.negotiation_draft_contract else None,
-                "start_time": current_start_time,
-                "end_time": datetime.now().isoformat(),  # Mark end time when game ends
-            }
-            state.negotiation_history.append(ongoing_negotiation)
+    #     if not already_saved:
+    #         ongoing_negotiation = {
+    #             "chat_messages": list(state.negotiation_chat_history),
+    #             "final_decision": "ongoing" if state.negotiation_draft_contract else "rejected",
+    #             "final_contract": to_contract_data(state.negotiation_draft_contract) if state.negotiation_draft_contract else None,
+    #             "start_time": current_start_time,
+    #             "end_time": datetime.now().isoformat(),  # Mark end time when game ends
+    #         }
+    #         state.negotiation_history.append(ongoing_negotiation)
     
     # Convert negotiation history to schema format
-    negotiation_history_data = [
-        NegotiationHistory(
+    #negotiation_history_data = [
+    #    NegotiationHistory(
             #chat_messages=neg["chat_messages"],
             #final_decision=neg["final_decision"],
-            final_contract=neg["final_contract"],
+    #        final_contract=neg["final_contract"],
             #start_time=neg.get("start_time"),
             #end_time=neg.get("end_time"),
-        )
-        for neg in state.negotiation_history
-    ]
+    #    )
+    #    for neg in state.negotiation_history
+    #]
 
     return GameSummary(
         session_id=session_id,
@@ -315,13 +316,13 @@ def get_game_summary(session_id: str) -> GameSummary:
         total_leftovers=total_leftovers,
         cumulative_buyer_profit=cumulative_buyer_profit,
         cumulative_supplier_profit=cumulative_supplier_profit,
-        average_demand=average_demand,
+        #average_demand=average_demand,
         fill_rate=fill_rate,
         return_rate=return_rate,
-        leftover_rate=leftover_rate,
-        historical_demands=list(state.historical_demands),
+        #leftover_rate=leftover_rate,
+        #historical_demands=list(state.historical_demands),
         rounds=rounds_data,
-        negotiation_history=negotiation_history_data,
+        #negotiation_history=negotiation_history_data,
     )
 
 

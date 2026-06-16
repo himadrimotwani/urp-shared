@@ -413,16 +413,16 @@ class GameSummary(BaseModel):
     cumulative_buyer_profit: float
     cumulative_supplier_profit: float
 
-    average_demand: float
+    #average_demand: float
     fill_rate: float               # total_sales / total_demand
     return_rate: float             # total_returns / total_sales
-    leftover_rate: float           # total_leftovers / (sales + leftovers)
+    #leftover_rate: float           # total_leftovers / (sales + leftovers)
 
-    historical_demands: List[int]
+    #historical_demands: List[int]
     rounds: List[RoundSummaryData] = Field(default_factory=list)
     
     # Negotiation history for logging and analysis
-    negotiation_history: List[NegotiationHistory] = Field(default_factory=list)
+    #negotiation_history: List[NegotiationHistory] = Field(default_factory=list)
 
 
 # ============================================================================
