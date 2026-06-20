@@ -109,6 +109,42 @@ def extract_from_malformed_json(json_str: str) -> dict[str, Any] | None:
     return result if result else None
 
 
+def extract_contract_terms_from_text(text: str) -> dict[str, Any] | None:
+    """
+    Extracts final contract terms from natural-language AI responses.
+    """
+    result: dict[str, Any] = {}
+
+    patterns = {
+        "wholesale_price": [
+            r'wholesale\s+price\s*:?\s*\$?\s*(\d+(?:\.\d+)?)',
+            r'wholesale\s+price\s+(?:is|at|of|to)\s+\$?\s*(\d+(?:\.\d+)?)',
+        ],
+        "buyback_price": [
+            r'buyback\s+price\s*:?\s*\$?\s*(\d+(?:\.\d+)?)',
+            r'buyback\s+price\s+(?:is|at|of|to)\s+\$?\s*(\d+(?:\.\d+)?)',
+            r'\$\s*(\d+(?:\.\d+)?)\s+buyback',
+        ],
+        "contract_length": [
+            r'contract\s+(?:duration|length)\s*:?\s*(\d+)\s+round',
+            r'(?:duration|length)\s*:?\s*(\d+)\s+round',
+            r'(\d+)\s+round\s+contract',
+        ],
+    }
+
+    for key, key_patterns in patterns.items():
+        matches: list[str] = []
+        for pattern in key_patterns:
+            matches.extend(re.findall(pattern, text, flags=re.IGNORECASE))
+        if matches:
+            try:
+                result[key] = float(matches[-1])
+            except ValueError:
+                pass
+
+    return result if result else None
+
+
 def clean_ai_response(message: str) -> str:
     """
     Cleans AI response text to make it suitable for display to students.
@@ -430,7 +466,13 @@ If you cannot determine all terms from the conversation, set "negotiation_comple
             except (json.JSONDecodeError, ValueError, KeyError, TypeError):
                 # If JSON parsing fails, try extracting terms from malformed JSON/text.
                 cleaned_message = ai_message.strip()
-                json_contract = extract_from_malformed_json(ai_message_clean)
+                conversation_text = "\n".join(
+                    msg.get("content", "") for msg in chat_history[-10:]
+                )
+                json_contract = (
+                    extract_from_malformed_json(ai_message_clean)
+                    or extract_contract_terms_from_text(f"{conversation_text}\n{ai_message_clean}")
+                )
         else:
             # Normal conversation - return message as-is
             cleaned_message = ai_message.strip()
@@ -471,6 +513,10 @@ If you cannot determine all terms from the conversation, set "negotiation_comple
                 else:
                     # Invalid contract values - discard it
                     print(f"Invalid contract from JSON: wholesale={draft_contract.wholesale_price}, buyback={draft_contract.buyback_price}")
+                    cleaned_message = (
+                        f"{cleaned_message}\n\nI cannot prepare the accept/reject offer yet because the buyback price "
+                        "must be lower than the wholesale price in this version of the contract."
+                    )
                     draft_contract = None
             except (ValueError, KeyError, TypeError) as e:
                 # Error creating contract from JSON - log and continue without draft contract
