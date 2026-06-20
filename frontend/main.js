@@ -1725,13 +1725,33 @@ document.addEventListener("DOMContentLoaded", () => {
         const loadRecordsBtn = document.getElementById("load-records-btn");
         const downloadParticipantsBtn = document.getElementById("download-participants-btn");
         const downloadRoundsBtn = document.getElementById("download-rounds-btn");
+        const recordsAccessCodeInput = document.getElementById("records-access-code");
         const recordsSummary = document.getElementById("records-summary");
+
+        function getRecordsAccessCode() {
+            return (recordsAccessCodeInput?.value || "").trim();
+        }
+
+        function requireRecordsAccessCode() {
+            const code = getRecordsAccessCode();
+            if (!code) {
+                if (recordsSummary) recordsSummary.textContent = "Enter the instructor access code first.";
+                addNotification("Instructor access code required.", "error");
+                return null;
+            }
+            return code;
+        }
 
         if (loadRecordsBtn) {
             loadRecordsBtn.addEventListener("click", async () => {
+                const code = requireRecordsAccessCode();
+                if (!code) return;
+
                 if (recordsSummary) recordsSummary.textContent = "Loading records...";
                 try {
-                    const data = await fetchJsonWithDetail(`${BASE_URL}/records/summary`);
+                    const data = await fetchJsonWithDetail(`${BASE_URL}/records/summary`, {
+                        headers: { "X-Instructor-Code": code },
+                    });
                     if (recordsSummary) {
                         recordsSummary.textContent =
                             `${data.participant_count} login record(s), ${data.round_count} round record(s).`;
@@ -1764,13 +1784,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (downloadParticipantsBtn) {
             downloadParticipantsBtn.addEventListener("click", () => {
-                downloadFile(`${BASE_URL}/records/participants.csv`);
+                const code = requireRecordsAccessCode();
+                if (!code) return;
+                downloadFile(`${BASE_URL}/records/participants.csv?code=${encodeURIComponent(code)}`);
             });
         }
 
         if (downloadRoundsBtn) {
             downloadRoundsBtn.addEventListener("click", () => {
-                downloadFile(`${BASE_URL}/records/rounds.csv`);
+                const code = requireRecordsAccessCode();
+                if (!code) return;
+                downloadFile(`${BASE_URL}/records/rounds.csv?code=${encodeURIComponent(code)}`);
             });
         }
     }

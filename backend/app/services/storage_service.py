@@ -83,7 +83,16 @@ def list_participant_records() -> list[dict[str, Any]]:
 
 
 def list_round_records() -> list[dict[str, Any]]:
-    return _read_jsonl(ROUNDS_PATH)
+    participants_by_id = {
+        record.get("participant_id"): record
+        for record in list_participant_records()
+        if record.get("participant_id")
+    }
+    rounds = _read_jsonl(ROUNDS_PATH)
+    for record in rounds:
+        if not record.get("participant"):
+            record["participant"] = participants_by_id.get(record.get("participant_id"))
+    return rounds
 
 
 def get_records_summary(limit: int = 25) -> dict[str, Any]:

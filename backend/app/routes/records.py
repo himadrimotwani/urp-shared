@@ -2,7 +2,9 @@
 Instructor-facing data access routes for collected participant and round records.
 """
 
-from fastapi import APIRouter, Response
+import os
+from fastapi import APIRouter, Header, HTTPException, Query, Response
+from dotenv import load_dotenv
 
 from app.services.storage_service import (
     get_records_summary,
@@ -12,15 +14,29 @@ from app.services.storage_service import (
 
 
 router = APIRouter()
+load_dotenv(override=True)
+
+
+def verify_instructor_code(code: str | None) -> None:
+    expected = os.getenv("INSTRUCTOR_ACCESS_CODE")
+    if not expected:
+        raise HTTPException(status_code=503, detail="Instructor access code is not configured.")
+    if code != expected:
+        raise HTTPException(status_code=403, detail="Invalid instructor access code.")
 
 
 @router.get("/records/summary")
-def records_summary(limit: int = 25) -> dict:
+def records_summary(
+    limit: int = 25,
+    x_instructor_code: str | None = Header(default=None),
+) -> dict:
+    verify_instructor_code(x_instructor_code)
     return get_records_summary(limit=max(1, min(limit, 200)))
 
 
 @router.get("/records/participants.csv")
-def download_participants_csv() -> Response:
+def download_participants_csv(code: str | None = Query(default=None)) -> Response:
+    verify_instructor_code(code)
     return Response(
         content=participants_csv(),
         media_type="text/csv",
@@ -29,7 +45,8 @@ def download_participants_csv() -> Response:
 
 
 @router.get("/records/rounds.csv")
-def download_rounds_csv() -> Response:
+def download_rounds_csv(code: str | None = Query(default=None)) -> Response:
+    verify_instructor_code(code)
     return Response(
         content=rounds_csv(),
         media_type="text/csv",
