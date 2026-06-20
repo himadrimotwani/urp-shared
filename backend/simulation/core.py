@@ -395,6 +395,7 @@ class GameState:
     cumulative_supplier_profit: float
     historical_demands: List[int]
     method: str = "bootstrap"
+    participant_id: str | None = None
 
     # Aggregates for end-of-game summary
     total_demand: int = 0

@@ -29,12 +29,26 @@ let sessionId = null;     // Current game session_id
 let currentState = null;  // Latest GameStateResponse from backend
 
 document.addEventListener("DOMContentLoaded", () => {
-    const BASE_URL = "/api";
-    //http://127.0.0.1:8000/api
+    const isLocalFrontend =
+        window.location.protocol === "file:" ||
+        window.location.hostname === "127.0.0.1" ||
+        window.location.hostname === "localhost";
+    const BASE_URL = isLocalFrontend ? "http://127.0.0.1:8000/api" : "/api";
+    let participantId = sessionStorage.getItem("fsp_participant_id") || null;
+    let participantName = sessionStorage.getItem("fsp_participant_name") || "";
 
     // ================================
     // DOM Element References
     // ================================
+    const loginScreenEl = document.getElementById("login-screen");
+    const loginFormEl = document.getElementById("login-form");
+    const loginNameInput = document.getElementById("login-name");
+    const loginEmailInput = document.getElementById("login-email");
+    const loginStudentIdInput = document.getElementById("login-student-id");
+    const loginSectionInput = document.getElementById("login-section");
+    const loginErrorEl = document.getElementById("login-error");
+    const loginSubmitBtn = document.getElementById("login-submit-btn");
+
     // Navigation and UI elements
     const notificationListEl = document.getElementById("notification-list");
     const phaseBannerEl = document.getElementById("phase-banner");
@@ -63,6 +77,69 @@ document.addEventListener("DOMContentLoaded", () => {
     // ================================
     // UI Initialization Functions
     // ================================
+
+    function unlockApp() {
+        document.body.classList.remove("app-locked");
+        if (loginScreenEl) {
+            loginScreenEl.classList.add("hidden-section");
+        }
+    }
+
+    function initLoginSection() {
+        if (participantId) {
+            unlockApp();
+            return;
+        }
+
+        document.body.classList.add("app-locked");
+        if (!loginFormEl) return;
+
+        loginFormEl.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const name = (loginNameInput?.value || "").trim();
+            if (!name) {
+                if (loginErrorEl) loginErrorEl.textContent = "Please enter your name.";
+                return;
+            }
+
+            if (loginSubmitBtn) {
+                loginSubmitBtn.disabled = true;
+                loginSubmitBtn.textContent = "Entering...";
+            }
+            if (loginErrorEl) loginErrorEl.textContent = "";
+
+            try {
+                const data = await fetchJsonWithDetail(`${BASE_URL}/participants`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name,
+                        email: (loginEmailInput?.value || "").trim() || null,
+                        student_id: (loginStudentIdInput?.value || "").trim() || null,
+                        section: (loginSectionInput?.value || "").trim() || null,
+                    }),
+                });
+
+                participantId = data.participant_id;
+                participantName = name;
+                sessionStorage.setItem("fsp_participant_id", participantId);
+                sessionStorage.setItem("fsp_participant_name", participantName);
+                unlockApp();
+                addNotification(`Welcome, ${participantName}.`, "success");
+            } catch (err) {
+                console.error(err);
+                if (loginErrorEl) {
+                    loginErrorEl.textContent = "Login failed: " + err.message;
+                }
+            } finally {
+                if (loginSubmitBtn) {
+                    loginSubmitBtn.disabled = false;
+                    loginSubmitBtn.textContent = "Enter Game";
+                }
+            }
+        });
+    }
     
     /**
      * Initializes tab switching functionality.
@@ -924,6 +1001,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const body = {
                 rounds: rounds,
                 demand_method: demandMethod,
+                participant_id: participantId,
             };
 
             try {
@@ -1868,6 +1946,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ================================
     
     // Initialize UI components
+    initLoginSection();
     initTabSwitching();
     initStatusDropdown();
     addNotification("UI ready. No game started yet.", "info");

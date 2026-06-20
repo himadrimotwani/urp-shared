@@ -8,7 +8,34 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body>
+<body class="app-locked">
+    <section id="login-screen" class="login-screen">
+        <form id="login-form" class="login-panel">
+            <div class="login-kicker">Fashion Supply Chain</div>
+            <h1>Student Login</h1>
+            <div class="login-grid">
+                <div class="form-field">
+                    <label>Full Name</label>
+                    <input type="text" id="login-name" autocomplete="name" required>
+                </div>
+                <div class="form-field">
+                    <label>Email</label>
+                    <input type="email" id="login-email" autocomplete="email">
+                </div>
+                <div class="form-field">
+                    <label>Student ID</label>
+                    <input type="text" id="login-student-id" autocomplete="off">
+                </div>
+                <div class="form-field">
+                    <label>Section</label>
+                    <input type="text" id="login-section" autocomplete="off">
+                </div>
+            </div>
+            <button type="submit" id="login-submit-btn">Enter Game</button>
+            <p id="login-error" class="login-error"></p>
+        </form>
+    </section>
+
     <!-- Nav Bar -->
     <nav class="tab-bar">
         <div class="tab-bar-left">
@@ -331,6 +358,6 @@
         </section>
     </div>
 
-    <script src="main.js?v=20260612-four-variable-proposal"></script>
+    <script src="main.js?v=20260620-local-login-api"></script>
 </body>
 </html>

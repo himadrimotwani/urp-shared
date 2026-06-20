@@ -15,6 +15,27 @@ from typing import List, Dict, Any
 
 
 # ============================================================================
+# Participant / Data Collection Schemas
+# ============================================================================
+
+class ParticipantCreateRequest(BaseModel):
+    """
+    Information collected before a player can access the game.
+    """
+    name: str
+    email: str | None = None
+    student_id: str | None = None
+    section: str | None = None
+
+
+class ParticipantCreateResponse(BaseModel):
+    """
+    Response after storing a participant record.
+    """
+    participant_id: str
+
+
+# ============================================================================
 # Configuration Schemas
 # ============================================================================
 
@@ -413,16 +434,16 @@ class GameSummary(BaseModel):
     cumulative_buyer_profit: float
     cumulative_supplier_profit: float
 
-    #average_demand: float
+    average_demand: float
     fill_rate: float               # total_sales / total_demand
     return_rate: float             # total_returns / total_sales
-    #leftover_rate: float           # total_leftovers / (sales + leftovers)
+    leftover_rate: float           # total_leftovers / (sales + leftovers)
 
-    #historical_demands: List[int]
+    historical_demands: List[int]
     rounds: List[RoundSummaryData] = Field(default_factory=list)
     
     # Negotiation history for logging and analysis
-    #negotiation_history: List[NegotiationHistory] = Field(default_factory=list)
+    negotiation_history: List[NegotiationHistory] = Field(default_factory=list)
 
 
 # ============================================================================
@@ -527,6 +548,7 @@ class GameStartRequest(BaseModel):
     """
     rounds: int = 50
     demand_method: str = "bootstrap"
+    participant_id: str | None = None
 
 
 class NegotiateRequest(BaseModel):

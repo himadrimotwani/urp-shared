@@ -8,3 +8,5 @@ venv/
 # Environment variables
 .env
 
+# Local runtime data collected by the deployed app
+storage/

@@ -80,6 +80,71 @@ body::before {
   z-index: -1;
 }
 
+body.app-locked {
+  overflow: hidden;
+}
+
+body.app-locked .tab-bar,
+body.app-locked .phase-banner-bar,
+body.app-locked .tab-content {
+  display: none;
+}
+
+.login-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.login-panel {
+  width: min(560px, 100%);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow-lg);
+  border-radius: var(--r-md);
+  padding: 1.6rem;
+}
+
+.login-kicker {
+  color: var(--indigo);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.login-panel h1 {
+  font-size: 1.7rem;
+  line-height: 1.2;
+  margin-bottom: 1.2rem;
+}
+
+.login-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.login-panel button[type="submit"] {
+  width: 100%;
+  margin-top: 1.2rem;
+}
+
+.login-error {
+  color: var(--rose-dark);
+  font-weight: 700;
+  min-height: 1.4rem;
+  margin-top: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .login-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ============================================================
    NAV
 ============================================================ */
