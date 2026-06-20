@@ -312,8 +312,9 @@ Respond naturally as a supplier in conversation. Keep responses conversational a
     
     # List of phrases that might indicate student agrees to terms
     agreement_indicators = [
-        "sounds good", "that works", "yes", "yeah", "ok", "okay", "sure",
-        "lock in", "lock it in", "accept", "deal", "agreed", "let's proceed"
+        "sounds good", "that works", "works for me", "yes", "yeah", "ok", "okay", "sure",
+        "lock in", "lock it in", "accept", "accepted", "deal", "agreed", "agree",
+        "let's proceed", "lets proceed", "finalize", "finalise", "confirm", "we have a deal"
     ]
     might_be_agreement = last_student_msg and any(phrase in last_student_msg for phrase in agreement_indicators)
     
@@ -427,9 +428,9 @@ If you cannot determine all terms from the conversation, set "negotiation_comple
                     raise ValueError("Empty response field in JSON")
                     
             except (json.JSONDecodeError, ValueError, KeyError, TypeError):
-                # If JSON parsing fails, treat as normal message
+                # If JSON parsing fails, try extracting terms from malformed JSON/text.
                 cleaned_message = ai_message.strip()
-                json_contract = None
+                json_contract = extract_from_malformed_json(ai_message_clean)
         else:
             # Normal conversation - return message as-is
             cleaned_message = ai_message.strip()
@@ -501,4 +502,3 @@ If you cannot determine all terms from the conversation, set "negotiation_comple
             "message": fallback_responses[fallback_index],
             "draft_contract": current_draft_contract
         }
-

@@ -1120,10 +1120,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const section = document.getElementById("counteroffer-section");
         const details = document.getElementById("counteroffer-details");
         if (!section || !details) return;
+        if (!counterContract) return;
 
         let html = `<p><strong>${message}</strong></p>`;
         html += `<div class="contract-summary-grid">`;
-        html += `<div class="contract-field"><strong>Type:</strong> ${counterContract.contract_type}</div>`;
+        html += `<div class="contract-field"><strong>Type:</strong> ${counterContract.contract_type || "buyback"}</div>`;
         html += `<div class="contract-field"><strong>Wholesale (w):</strong> ${counterContract.wholesale_price}</div>`;
         html += `<div class="contract-field"><strong>Buyback (b):</strong> ${counterContract.buyback_price}</div>`;
         html += `<div class="contract-field"><strong>Length (L):</strong> ${counterContract.length} rounds</div>`;
@@ -1133,6 +1134,7 @@ document.addEventListener("DOMContentLoaded", () => {
         section.classList.remove("hidden-section");
         section.style.display = "block";
         updateSectionVisibility();
+        section.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
     
     /**
@@ -1438,6 +1440,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (data.negotiation_draft_contract) {
                         showCounterofferSection(data.negotiation_draft_contract, "Based on our discussion, here's the proposed contract. You can accept or reject it:");
                         updateSectionVisibility();
+                        addNotification("Supplier offer ready. Review the accept/reject buttons.", "info");
                     }
                     
                 } catch (err) {
