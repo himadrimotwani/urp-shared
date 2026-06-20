@@ -805,26 +805,181 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    /**
-     * Updates all game summary outputs (student, instructor, debug tabs).
-     * 
-     * Inputs:
-     * - text: Text to display in all summary outputs
-     * 
-     * What happens:
-     * - Updates summary output in student tab
-     * - Updates summary output in instructor tab
-     * - Updates summary output in debug tab
-     */
-    function updateSummaryOutputs(text) {
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function formatMoney(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return "$0.00";
+        return `$${num.toFixed(2)}`;
+    }
+
+    function formatNumber(value, digits = 1) {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return "0";
+        return num.toFixed(digits);
+    }
+
+    function formatPercent(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return "0.0%";
+        return `${(num * 100).toFixed(1)}%`;
+    }
+
+    function latestAcceptedContract(summary) {
+        const rounds = summary.rounds || [];
+        if (rounds.length > 0) {
+            const last = rounds[rounds.length - 1];
+            return {
+                contract_type: last.contract_type,
+                wholesale_price: last.wholesale_price,
+                buyback_price: last.buyback_price,
+                contract_length: last.contract_length,
+            };
+        }
+
+        const negotiations = summary.negotiation_history || [];
+        for (let i = negotiations.length - 1; i >= 0; i--) {
+            if (negotiations[i].final_contract) {
+                return negotiations[i].final_contract;
+            }
+        }
+        return null;
+    }
+
+    function buildSummaryInterpretation(summary) {
+        const rounds = summary.rounds || [];
+        if (!rounds.length) {
+            return ["No rounds were completed, so there is no ordering strategy to summarize yet."];
+        }
+
+        const aboveDemand = rounds.filter(r => Number(r.order_quantity) > Number(r.realized_demand)).length;
+        const belowDemand = rounds.filter(r => Number(r.order_quantity) < Number(r.realized_demand)).length;
+        const totalReturns = Number(summary.total_returns || 0);
+        const buyerProfit = Number(summary.cumulative_buyer_profit || 0);
+        const supplierProfit = Number(summary.cumulative_supplier_profit || 0);
+        const notes = [];
+
+        if (aboveDemand > belowDemand) {
+            notes.push(`Orders were above realized demand in ${aboveDemand} of ${rounds.length} rounds, which increased exposure to unsold inventory and returns.`);
+        } else if (belowDemand > aboveDemand) {
+            notes.push(`Orders were below realized demand in ${belowDemand} of ${rounds.length} rounds, which reduced leftover risk but may have left sales unmet.`);
+        } else {
+            notes.push("Ordering was balanced around realized demand across the completed rounds.");
+        }
+
+        if (totalReturns > 0) {
+            notes.push(`The contract generated ${totalReturns} returned unit(s), so buyback terms affected how risk and cost were shared.`);
+        } else {
+            notes.push("No returns occurred, so supplier profit mainly depended on the wholesale margin over production cost.");
+        }
+
+        if (buyerProfit > supplierProfit) {
+            notes.push("Buyer profit was higher than supplier profit; discuss whether the contract terms created balanced incentives.");
+        } else if (supplierProfit > buyerProfit) {
+            notes.push("Supplier profit was higher than buyer profit; discuss whether the buyer carried too much demand risk.");
+        } else {
+            notes.push("Buyer and supplier profits were similar, suggesting relatively balanced realized outcomes.");
+        }
+
+        return notes;
+    }
+
+    function renderSummaryHtml(summary) {
+        const rounds = summary.rounds || [];
+        const contract = latestAcceptedContract(summary);
+        const notes = buildSummaryInterpretation(summary);
+
+        let html = '<div class="summary-dashboard">';
+        html += '<div class="summary-metric-grid">';
+        html += `<div class="summary-metric"><span>Rounds Played</span><strong>${summary.total_rounds_played ?? rounds.length}</strong></div>`;
+        html += `<div class="summary-metric"><span>Buyer Profit</span><strong>${formatMoney(summary.cumulative_buyer_profit)}</strong></div>`;
+        html += `<div class="summary-metric"><span>Supplier Profit</span><strong>${formatMoney(summary.cumulative_supplier_profit)}</strong></div>`;
+        html += `<div class="summary-metric"><span>Average Demand</span><strong>${formatNumber(summary.average_demand)}</strong></div>`;
+        html += `<div class="summary-metric"><span>Fill Rate</span><strong>${formatPercent(summary.fill_rate)}</strong></div>`;
+        html += `<div class="summary-metric"><span>Return Rate</span><strong>${formatPercent(summary.return_rate)}</strong></div>`;
+        html += '</div>';
+
+        html += '<div class="summary-section-grid">';
+        html += '<div class="summary-panel"><h4>Contract Terms</h4>';
+        if (contract) {
+            html += `<dl class="summary-dl">
+                <div><dt>Type</dt><dd>${escapeHtml(contract.contract_type || "buyback")}</dd></div>
+                <div><dt>Wholesale price</dt><dd>${formatMoney(contract.wholesale_price)}</dd></div>
+                <div><dt>Buyback price</dt><dd>${formatMoney(contract.buyback_price)}</dd></div>
+                <div><dt>Length</dt><dd>${contract.contract_length || contract.length || 0} rounds</dd></div>
+            </dl>`;
+        } else {
+            html += '<p>No accepted contract was recorded.</p>';
+        }
+        html += '</div>';
+
+        html += '<div class="summary-panel"><h4>What Happened</h4><ul class="summary-notes">';
+        notes.forEach(note => {
+            html += `<li>${escapeHtml(note)}</li>`;
+        });
+        html += '</ul></div>';
+        html += '</div>';
+
+        if (rounds.length) {
+            html += '<div class="summary-panel"><h4>Round-by-Round Results</h4>';
+            html += '<div class="records-table-wrap"><table class="records-table summary-round-table"><thead><tr>';
+            ["Round", "Order", "Demand", "Buyer Profit", "Supplier Profit", "Wholesale", "Buyback"].forEach(label => {
+                html += `<th>${label}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            rounds.forEach(round => {
+                html += `<tr>
+                    <td>${round.round_index}</td>
+                    <td>${round.order_quantity}</td>
+                    <td>${round.realized_demand}</td>
+                    <td>${formatMoney(round.buyer_profit)}</td>
+                    <td>${formatMoney(round.supplier_profit)}</td>
+                    <td>${formatMoney(round.wholesale_price)}</td>
+                    <td>${formatMoney(round.buyback_price)}</td>
+                </tr>`;
+            });
+            html += '</tbody></table></div></div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function setSummaryPlaceholder(text) {
         if (summaryOutput) {
             summaryOutput.textContent = text;
+            summaryOutput.classList.add("empty-summary");
         }
         if (summaryOutputInstructor) {
             summaryOutputInstructor.textContent = text;
+            summaryOutputInstructor.classList.add("empty-summary");
         }
         if (summaryOutputDebug) {
             summaryOutputDebug.textContent = text;
+        }
+    }
+
+    function updateSummaryOutputs(summary) {
+        const summaryText = JSON.stringify(summary, null, 2);
+        const summaryHtml = renderSummaryHtml(summary);
+
+        if (summaryOutput) {
+            summaryOutput.innerHTML = summaryHtml;
+            summaryOutput.classList.remove("empty-summary");
+        }
+        if (summaryOutputInstructor) {
+            summaryOutputInstructor.innerHTML = summaryHtml;
+            summaryOutputInstructor.classList.remove("empty-summary");
+        }
+        if (summaryOutputDebug) {
+            summaryOutputDebug.textContent = summaryText;
         }
     }
 
@@ -846,13 +1001,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const summary = await fetchJsonWithDetail(
                 `${BASE_URL}/game/summary?session_id=${encodeURIComponent(sessionId)}`
             );
-            const summaryText = JSON.stringify(summary, null, 2);
-            updateSummaryOutputs(summaryText);
+            updateSummaryOutputs(summary);
             addNotification("Game summary loaded.", "info");
         } catch (err) {
             console.error(err);
             const errorText = "Error loading summary: " + err.message;
-            updateSummaryOutputs(errorText);
+            setSummaryPlaceholder(errorText);
             addNotification("Failed to load game summary: " + err.message, "error");
         }
     }
@@ -1016,7 +1170,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 currentState = data.state;
 
                 // Reset summary for the new game
-                updateSummaryOutputs("No summary yet.");
+                setSummaryPlaceholder("No summary yet.");
 
                 // Clear chat history UI when starting a new game
                 const chatMessages = document.getElementById("chat-messages");
