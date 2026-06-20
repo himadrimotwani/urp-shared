@@ -145,6 +145,43 @@ body.app-locked .tab-content {
   }
 }
 
+.records-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.records-table-wrap {
+  overflow-x: auto;
+}
+
+.records-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  background: #fff;
+}
+
+.records-table th,
+.records-table td {
+  border: 1px solid var(--card-border);
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.records-table th {
+  background: var(--indigo-light);
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .records-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ============================================================
    NAV
 ============================================================ */

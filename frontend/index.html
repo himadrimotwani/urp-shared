@@ -323,6 +323,27 @@
             <p>Populated after the game ends.</p>
             <pre id="summary-output-instructor">No summary yet.</pre>
         </section>
+
+        <!-- Data Records -->
+        <section>
+            <h3>Data Records</h3>
+            <div class="form-actions" style="margin-top:0;">
+                <button id="load-records-btn">Load Records</button>
+                <button id="download-participants-btn">Download Logins CSV</button>
+                <button id="download-rounds-btn">Download Rounds CSV</button>
+            </div>
+            <p id="records-summary">No records loaded yet.</p>
+            <div class="records-grid">
+                <div>
+                    <h4>Recent Logins</h4>
+                    <div id="participants-records-table" class="records-table-wrap"></div>
+                </div>
+                <div>
+                    <h4>Recent Rounds</h4>
+                    <div id="rounds-records-table" class="records-table-wrap"></div>
+                </div>
+            </div>
+        </section>
     </div>
 
     <!-- ================================ -->
@@ -358,6 +379,6 @@
         </section>
     </div>
 
-    <script src="main.js?v=20260620-offer-popup-fix"></script>
+    <script src="main.js?v=20260620-records-download"></script>
 </body>
 </html>

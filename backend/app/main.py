@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import routes
-from app.routes import game, negotiation, config, participants
+from app.routes import game, negotiation, config, participants, records
 
 # Import services to initialize them
 from app.services.ai_service import openai_client, deepseek_client, ai_provider
@@ -230,11 +230,13 @@ app.include_router(game.router)
 app.include_router(negotiation.router)
 app.include_router(config.router)
 app.include_router(participants.router)
+app.include_router(records.router)
 # Himadri Change
 app.include_router(game.router, prefix="/api")
 app.include_router(negotiation.router, prefix="/api")
 app.include_router(config.router, prefix="/api")
 app.include_router(participants.router, prefix="/api")
+app.include_router(records.router, prefix="/api")
 
 # Load config on startup
 load_negotiation_config()

@@ -1685,6 +1685,96 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function downloadFile(url) {
+        const link = document.createElement("a");
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    }
+
+    function renderRecordsTable(containerId, rows, columns) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (!rows.length) {
+            container.textContent = "No records yet.";
+            return;
+        }
+
+        let html = "<table class=\"records-table\"><thead><tr>";
+        columns.forEach(col => {
+            html += `<th>${col.label}</th>`;
+        });
+        html += "</tr></thead><tbody>";
+
+        rows.forEach(row => {
+            html += "<tr>";
+            columns.forEach(col => {
+                const value = col.get(row);
+                html += `<td>${value ?? ""}</td>`;
+            });
+            html += "</tr>";
+        });
+
+        html += "</tbody></table>";
+        container.innerHTML = html;
+    }
+
+    function initRecordsSection() {
+        const loadRecordsBtn = document.getElementById("load-records-btn");
+        const downloadParticipantsBtn = document.getElementById("download-participants-btn");
+        const downloadRoundsBtn = document.getElementById("download-rounds-btn");
+        const recordsSummary = document.getElementById("records-summary");
+
+        if (loadRecordsBtn) {
+            loadRecordsBtn.addEventListener("click", async () => {
+                if (recordsSummary) recordsSummary.textContent = "Loading records...";
+                try {
+                    const data = await fetchJsonWithDetail(`${BASE_URL}/records/summary`);
+                    if (recordsSummary) {
+                        recordsSummary.textContent =
+                            `${data.participant_count} login record(s), ${data.round_count} round record(s).`;
+                    }
+
+                    renderRecordsTable("participants-records-table", data.participants || [], [
+                        { label: "Name", get: row => row.name },
+                        { label: "Email", get: row => row.email },
+                        { label: "Student ID", get: row => row.student_id },
+                        { label: "Section", get: row => row.section },
+                        { label: "Created", get: row => row.created_at },
+                    ]);
+
+                    renderRecordsTable("rounds-records-table", data.rounds || [], [
+                        { label: "Name", get: row => row.participant?.name },
+                        { label: "Student ID", get: row => row.participant?.student_id },
+                        { label: "Round", get: row => row.round?.round_index },
+                        { label: "Order", get: row => row.round?.order_quantity },
+                        { label: "Demand", get: row => row.round?.realized_demand },
+                        { label: "Buyer Profit", get: row => row.round?.buyer_profit },
+                        { label: "Supplier Profit", get: row => row.round?.supplier_profit },
+                    ]);
+                } catch (err) {
+                    console.error(err);
+                    if (recordsSummary) recordsSummary.textContent = "Error: " + err.message;
+                    addNotification("Failed to load records: " + err.message, "error");
+                }
+            });
+        }
+
+        if (downloadParticipantsBtn) {
+            downloadParticipantsBtn.addEventListener("click", () => {
+                downloadFile(`${BASE_URL}/records/participants.csv`);
+            });
+        }
+
+        if (downloadRoundsBtn) {
+            downloadRoundsBtn.addEventListener("click", () => {
+                downloadFile(`${BASE_URL}/records/rounds.csv`);
+            });
+        }
+    }
+
     /**
      * Updates the contract type dropdown based on available types.
      * 
@@ -1962,6 +2052,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initNegotiationSection();
     initOrderSection();
     initConfigSection();
+    initRecordsSection();
     initNegotiationConfigSection();
     loadNegotiationConfigOnStartup();
 
