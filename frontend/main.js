@@ -27,6 +27,7 @@
 // ================================
 let sessionId = null;     // Current game session_id
 let currentState = null;  // Latest GameStateResponse from backend
+let latestDisplayedProposal = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     const isLocalFrontend =
@@ -1361,6 +1362,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const submittedSection = document.getElementById("submitted-proposal");
         if (!submittedDetailsEl || !submittedSection || !contract) return;
 
+        latestDisplayedProposal = { ...contract };
+
         submittedDetailsEl.innerHTML = `
             <div><strong>Status:</strong> ${statusText}</div>
             <div><strong>Wholesale Price (w):</strong> ${contract.wholesale_price}</div>
@@ -1370,6 +1373,58 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         submittedSection.style.display = "block";
         submittedSection.classList.remove("hidden-section");
+    }
+
+    function updateSubmittedProposalFromChat(message) {
+        if (!latestDisplayedProposal || !message) return;
+
+        const text = message.toLowerCase();
+        const nextProposal = { ...latestDisplayedProposal };
+        let changed = false;
+
+        function numberFrom(pattern) {
+            const match = text.match(pattern);
+            return match ? parseFloat(match[1]) : null;
+        }
+
+        function applyField(fieldName, aliases, directPatterns) {
+            const mentionsField = aliases.some((alias) => text.includes(alias));
+            if (!mentionsField) return;
+
+            const increaseBy = numberFrom(/increase(?:\s+\w+){0,3}\s+by\s+\$?(\d+(?:\.\d+)?)/);
+            const decreaseBy = numberFrom(/decrease(?:\s+\w+){0,3}\s+by\s+\$?(\d+(?:\.\d+)?)/);
+            const directValue = directPatterns
+                .map((pattern) => numberFrom(pattern))
+                .find((value) => value !== null);
+
+            if (increaseBy !== null && typeof nextProposal[fieldName] === "number") {
+                nextProposal[fieldName] += increaseBy;
+                changed = true;
+            } else if (decreaseBy !== null && typeof nextProposal[fieldName] === "number") {
+                nextProposal[fieldName] -= decreaseBy;
+                changed = true;
+            } else if (directValue !== null) {
+                nextProposal[fieldName] = directValue;
+                changed = true;
+            }
+        }
+
+        applyField("buyback_price", ["buyback", " b ", " b=", "b as"], [
+            /(?:buyback|b)\s*(?:price)?\s*(?:is|as|=|to|works)?\s*\$?(\d+(?:\.\d+)?)/,
+            /\$?(\d+(?:\.\d+)?)\s*(?:buyback|b)\b/,
+        ]);
+        applyField("wholesale_price", ["wholesale", " w ", " w=", "w as"], [
+            /(?:wholesale|w)\s*(?:price)?\s*(?:is|as|=|to|works)?\s*\$?(\d+(?:\.\d+)?)/,
+            /\$?(\d+(?:\.\d+)?)\s*(?:wholesale|w)\b/,
+        ]);
+        applyField("length", ["length", "round", "rounds"], [
+            /(?:length|rounds?)\s*(?:is|as|=|to|works)?\s*(\d+(?:\.\d+)?)/,
+            /(\d+(?:\.\d+)?)\s*(?:rounds?|length)\b/,
+        ]);
+
+        if (changed) {
+            renderSubmittedProposal(nextProposal, "Updated Proposal");
+        }
     }
     
     /**
@@ -1660,6 +1715,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 chatInput.value = "";
                 
                 addChatMessage("student", message);
+                updateSubmittedProposalFromChat(message);
                 
                 try {
                     const data = await fetchJsonWithDetail(`${BASE_URL}/game/negotiate/chat`, {
