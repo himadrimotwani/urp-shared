@@ -864,6 +864,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const totalReturns = Number(summary.total_returns || 0);
         const buyerProfit = Number(summary.cumulative_buyer_profit || 0);
         const supplierProfit = Number(summary.cumulative_supplier_profit || 0);
+        const supplyChainProfit = buyerProfit + supplierProfit;
         const notes = [];
 
         if (aboveDemand > belowDemand) {
@@ -887,6 +888,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             notes.push("Buyer and supplier profits were similar, suggesting relatively balanced realized outcomes.");
         }
+        notes.push(`Total supply chain profit was ${formatMoney(supplyChainProfit)}, combining buyer and supplier profit.`);
 
         return notes;
     }
@@ -901,6 +903,7 @@ document.addEventListener("DOMContentLoaded", () => {
         html += `<div class="summary-metric"><span>Rounds Played</span><strong>${summary.total_rounds_played ?? rounds.length}</strong></div>`;
         html += `<div class="summary-metric"><span>Buyer Profit</span><strong>${formatMoney(summary.cumulative_buyer_profit)}</strong></div>`;
         html += `<div class="summary-metric"><span>Supplier Profit</span><strong>${formatMoney(summary.cumulative_supplier_profit)}</strong></div>`;
+        html += `<div class="summary-metric"><span>Supply Chain Profit</span><strong>${formatMoney(Number(summary.cumulative_buyer_profit || 0) + Number(summary.cumulative_supplier_profit || 0))}</strong></div>`;
         html += `<div class="summary-metric"><span>Average Demand</span><strong>${formatNumber(summary.average_demand)}</strong></div>`;
         html += `<div class="summary-metric"><span>Fill Rate</span><strong>${formatPercent(summary.fill_rate)}</strong></div>`;
         html += `<div class="summary-metric"><span>Return Rate</span><strong>${formatPercent(summary.return_rate)}</strong></div>`;
