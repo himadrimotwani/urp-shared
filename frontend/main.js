@@ -773,7 +773,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const usedRounds = totalRounds - remaining;
         const progressPct = Math.round((usedRounds / totalRounds) * 100);
 
-        let html = `<span class="contract-badge">${typeLabel}</span>`;
+        let html = `<span class="contract-badge active-contract-badge">Active ${typeLabel} Contract</span>`;
         html += '<div class="contract-summary-grid">';
         html += `<div class="contract-field"><strong>Wholesale (w):</strong> ${contract.wholesale_price}</div>`;
         html += `<div class="contract-field"><strong>Buyback (b):</strong> ${contract.buyback_price}</div>`;
@@ -1363,13 +1363,16 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!submittedDetailsEl || !submittedSection || !contract) return;
 
         latestDisplayedProposal = { ...contract };
+        const isAccepted = statusText.toLowerCase().includes("accepted");
+        const statusClass = isAccepted ? "proposal-status accepted" : "proposal-status pending";
 
         submittedDetailsEl.innerHTML = `
-            <div><strong>Status:</strong> ${statusText}</div>
+            <div><span class="${statusClass}">${statusText}</span></div>
             <div><strong>Wholesale Price (w):</strong> ${contract.wholesale_price}</div>
             <div><strong>Buyback Price (b):</strong> ${contract.buyback_price}</div>
             <div><strong>Contract Length (L):</strong> ${contract.length}</div>
             <div><strong>Contract Type:</strong> ${contract.contract_type || "buyback"}</div>
+            <div class="proposal-note">${isAccepted ? "These terms are now active for ordering." : "These terms are proposed only. They are not active until accepted."}</div>
         `;
         submittedSection.style.display = "block";
         submittedSection.classList.remove("hidden-section");

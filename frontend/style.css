@@ -856,6 +856,10 @@ pre {
   color: #fff; margin-bottom: .875rem;
   box-shadow: 0 2px 8px var(--indigo-glow);
 }
+.active-contract-badge {
+  background: linear-gradient(135deg, var(--emerald), #0f766e);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, .25);
+}
 .contract-summary-grid {
   display: grid; grid-template-columns: repeat(auto-fit,minmax(155px,1fr));
   gap: .5rem 1rem; padding: .875rem 1rem;
@@ -910,6 +914,32 @@ pre {
   border: 1px solid #c7d2fe; border-radius: var(--r-md); font-size: .875rem;
 }
 #submitted-proposal h4 { margin: 0 0 .4rem; color: var(--indigo); }
+.proposal-status {
+  display: inline-flex;
+  align-items: center;
+  padding: .22rem .65rem;
+  border-radius: var(--r-pill);
+  font-size: .68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: .5rem;
+}
+.proposal-status.pending {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+}
+.proposal-status.accepted {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+.proposal-note {
+  margin-top: .55rem;
+  color: var(--text-muted);
+  font-size: .78rem;
+}
 
 /* ============================================================
    UTILITY
