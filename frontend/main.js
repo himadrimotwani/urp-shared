@@ -1355,6 +1355,22 @@ document.addEventListener("DOMContentLoaded", () => {
         updateSectionVisibility();
         section.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
+
+    function renderSubmittedProposal(contract, statusText = "Submitted Proposal") {
+        const submittedDetailsEl = document.getElementById("submitted-details");
+        const submittedSection = document.getElementById("submitted-proposal");
+        if (!submittedDetailsEl || !submittedSection || !contract) return;
+
+        submittedDetailsEl.innerHTML = `
+            <div><strong>Status:</strong> ${statusText}</div>
+            <div><strong>Wholesale Price (w):</strong> ${contract.wholesale_price}</div>
+            <div><strong>Buyback Price (b):</strong> ${contract.buyback_price}</div>
+            <div><strong>Contract Length (L):</strong> ${contract.length}</div>
+            <div><strong>Contract Type:</strong> ${contract.contract_type || "buyback"}</div>
+        `;
+        submittedSection.style.display = "block";
+        submittedSection.classList.remove("hidden-section");
+    }
     
     /**
      * Hides the counteroffer section.
@@ -1470,6 +1486,9 @@ document.addEventListener("DOMContentLoaded", () => {
             renderGameState();
             
             if (accept) {
+                if (currentState && currentState.contract) {
+                    renderSubmittedProposal(currentState.contract, "Accepted Supplier Offer");
+                }
                 addNotification("Offer accepted. Contract is now active.", "success");
                 hideCounterofferSection();
                 hideChatSection();
@@ -1505,27 +1524,35 @@ document.addEventListener("DOMContentLoaded", () => {
     function initNegotiationSection() {
         const negotiateForm = document.getElementById("negotiate-form");
         const negotiateOutput = document.getElementById("negotiate-output");
-        if (!negotiateForm || !negotiateOutput) return;
+        if (!negotiateForm) return;
 
         negotiateForm.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            negotiateOutput.textContent = "Submitting proposal...";
+            if (negotiateOutput) {
+                negotiateOutput.textContent = "Submitting proposal...";
+            }
 
             if (!sessionId) {
-                negotiateOutput.textContent = "Start a game first!";
+                if (negotiateOutput) {
+                    negotiateOutput.textContent = "Start a game first!";
+                }
                 addNotification("Negotiation attempted without a game.", "error");
                 return;
             }
 
             if (!currentState) {
-                negotiateOutput.textContent = "No game state available.";
+                if (negotiateOutput) {
+                    negotiateOutput.textContent = "No game state available.";
+                }
                 addNotification("Negotiation failed: no game state.", "error");
                 return;
             }
 
             if (currentState.game_over) {
-                negotiateOutput.textContent = "Game is over. Start a new game.";
+                if (negotiateOutput) {
+                    negotiateOutput.textContent = "Game is over. Start a new game.";
+                }
                 addNotification("Negotiation attempted after game over.", "error");
                 return;
             }
@@ -1549,23 +1576,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 contract_type: contractType,
             };
 
-            const submittedDetailsEl = document.getElementById("submitted-details");
-            if (submittedDetailsEl) 
-            {
-                submittedDetailsEl.innerHTML = `
-                    <div><strong>Wholesale Price (w):</strong> ${w}</div>
-                    <div><strong>Buyback Price (b):</strong> ${b}</div>
-                    <div><strong>Contract Length (L):</strong> ${length}</div>
-                    <div><strong>Contract Type:</strong> ${contractType}</div>
-                `;
-            }
-
-            // ✅ Show submitted proposal
-            const submittedSection = document.getElementById("submitted-proposal");
-            if (submittedSection) {
-                submittedSection.style.display = "block";
-                submittedSection.classList.remove("hidden-section");
-            }
+            renderSubmittedProposal(body, "Submitted Proposal");
 
             showChatSection();
             try {
@@ -1576,13 +1587,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 currentState = data.state;
-                negotiateOutput.textContent = JSON.stringify(data, null, 2);
+                if (negotiateOutput) {
+                    negotiateOutput.textContent = JSON.stringify(data, null, 2);
+                }
                 renderGameState();
 
                 const decision = (data.decision || "unknown").toLowerCase();
                 
                 // Handle different decision outcomes
                 if (decision === "accept") {
+                    if (currentState && currentState.contract) {
+                        renderSubmittedProposal(currentState.contract, "Accepted Proposal");
+                    }
                     addNotification("Negotiation: contract accepted and activated.", "success");
                     hideCounterofferSection();
                     hideChatSection();
@@ -1609,7 +1625,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             } catch (err) {
                 console.error(err);
-                negotiateOutput.textContent = "Error: " + err.message;
+                if (negotiateOutput) {
+                    negotiateOutput.textContent = "Error: " + err.message;
+                }
                 addNotification("Negotiation error: " + err.message, "error");
             }
         });
