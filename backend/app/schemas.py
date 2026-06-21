@@ -122,6 +122,25 @@ class ConfigStateResponse(BaseModel):
     history_summary: HistorySummary
 
 
+class DemandHistoryOption(BaseModel):
+    """
+    One selectable demand-history scenario.
+    """
+    id: str
+    label: str
+    count: int
+    min: int | None = None
+    max: int | None = None
+    sample: List[int] = Field(default_factory=list)
+
+
+class DemandHistoriesResponse(BaseModel):
+    """
+    List of demand histories available for new games.
+    """
+    histories: List[DemandHistoryOption]
+
+
 class UpdateConfigRequest(BaseModel):
     """
     Request to update configuration parameters.
@@ -548,6 +567,7 @@ class GameStartRequest(BaseModel):
     """
     rounds: int = 50
     demand_method: str = "bootstrap"
+    demand_history_id: str | None = None
     participant_id: str | None = None
 
 

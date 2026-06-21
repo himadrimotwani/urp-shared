@@ -1199,6 +1199,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function initGameControlSection() {
         const startGameButton = document.getElementById("start-game-btn");
         const demandMethodInput = document.getElementById("demand-method-input");
+        const demandHistoryInput = document.getElementById("demand-history-input");
         const roundsInput = document.getElementById("rounds-input");
         const endGameEarlyBtn = document.getElementById("end-game-early-btn");
         const endGameEarlyOutput = document.getElementById("end-game-early-output");
@@ -1220,6 +1221,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const body = {
                 rounds: rounds,
                 demand_method: demandMethod,
+                demand_history_id: demandHistoryInput ? demandHistoryInput.value : "default",
                 participant_id: participantId,
             };
 
@@ -1317,6 +1319,32 @@ document.addEventListener("DOMContentLoaded", () => {
                     addNotification("Failed to end game early: " + err.message, "error");
                 }
             });
+        }
+    }
+
+    async function loadDemandHistoryOptionsOnStartup() {
+        const demandHistoryInput = document.getElementById("demand-history-input");
+        if (!demandHistoryInput) return;
+
+        try {
+            const data = await fetchJsonWithDetail(`${BASE_URL}/config/demand-histories`);
+            const histories = Array.isArray(data.histories) ? data.histories : [];
+            if (histories.length === 0) return;
+
+            demandHistoryInput.innerHTML = "";
+            for (const history of histories) {
+                const option = document.createElement("option");
+                option.value = history.id;
+                const rangeLabel =
+                    typeof history.min === "number" && typeof history.max === "number"
+                        ? `, ${history.min}-${history.max}`
+                        : "";
+                option.textContent = `${history.label} (${history.count} values${rangeLabel})`;
+                demandHistoryInput.appendChild(option);
+            }
+        } catch (err) {
+            console.error("Failed to load demand history options:", err);
+            addNotification("Could not load demand history options. Using default history.", "error");
         }
     }
 
@@ -2389,6 +2417,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initConfigSection();
     initRecordsSection();
     initNegotiationConfigSection();
+    loadDemandHistoryOptionsOnStartup();
     loadNegotiationConfigOnStartup();
 
     // Additional UX enhancements

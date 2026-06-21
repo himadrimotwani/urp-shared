@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.schemas import (
     ConfigStateResponse,
+    DemandHistoriesResponse,
     UpdateConfigRequest,
     NegotiationConfigResponse,
     UpdateNegotiationConfigRequest,
@@ -44,6 +45,16 @@ def get_config() -> ConfigStateResponse:
         Used to load configuration into the UI for viewing and editing.
     """
     return build_config_state_response()
+
+
+@router.get("/config/demand-histories", response_model=DemandHistoriesResponse)
+def get_demand_histories() -> DemandHistoriesResponse:
+    """
+    Returns selectable demand history scenarios for new games.
+    """
+    from app.services.demand_history_service import list_demand_histories
+
+    return DemandHistoriesResponse(histories=list_demand_histories())
 
 
 @router.post("/config/update", response_model=ConfigStateResponse)
@@ -180,4 +191,3 @@ def update_negotiation_config(request: UpdateNegotiationConfigRequest) -> Negoti
     reload_negotiation_config()
     
     return NegotiationConfigResponse(negotiation_config=load_negotiation_config())
-

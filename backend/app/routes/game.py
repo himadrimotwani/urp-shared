@@ -9,7 +9,6 @@ from fastapi import APIRouter, HTTPException
 from simulation.core import (
     GameState,
     Contract,
-    DEFAULT_HISTORY,
     simulate_game_round,
 )
 from app.schemas import (
@@ -31,6 +30,7 @@ from app.services.game_service import (
     to_contract_data,
 )
 from app.services.game_service import SESSIONS
+from app.services.demand_history_service import load_demand_history_by_id
 from app.services.storage_service import log_round_record
 
 router = APIRouter()
@@ -81,8 +81,11 @@ def start_game(request: GameStartRequest) -> GameStartResponse:
         contract_type="buyback",
     )
 
-    # per-session copy (updates list on simulated rounds)
-    history = list(DEFAULT_HISTORY)
+    # Per-session copy. Selecting a scenario only affects this new game.
+    try:
+        history = list(load_demand_history_by_id(request.demand_history_id))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     # initial game state
     state = GameState(
