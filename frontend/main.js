@@ -61,6 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Round result element
     const roundResultCardEl = document.getElementById("round-result-card");
+    const roundResultsTableEl = document.getElementById("round-results-table");
     
     // Debug output elements
     const gameStateOutput = document.getElementById("game-state-output");
@@ -543,6 +544,66 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="round-result-field profit ${profitClass(supplierProfit)}"><strong>Profit: ${fmt(supplierProfit)}</strong></div>
             </div>
         `;
+    }
+
+    function resetRoundResultsTable() {
+        if (!roundResultsTableEl) return;
+
+        const tbody = roundResultsTableEl.querySelector("tbody");
+        if (!tbody) return;
+
+        tbody.innerHTML = `
+            <tr class="empty-row">
+                <td colspan="12">No rounds completed yet.</td>
+            </tr>
+        `;
+    }
+
+    function appendRoundResultsTableRow(roundOutput, orderQuantity) {
+        if (!roundResultsTableEl || !roundOutput) return;
+
+        const tbody = roundResultsTableEl.querySelector("tbody");
+        if (!tbody) return;
+
+        const emptyRow = tbody.querySelector(".empty-row");
+        if (emptyRow) {
+            emptyRow.remove();
+        }
+
+        const roundIndex = currentState ? (currentState.round_number - 1) : tbody.children.length + 1;
+        const buyerProfit = roundOutput.buyer_profit;
+        const supplierProfit = roundOutput.supplier_profit;
+        const supplyChainProfit =
+            (typeof buyerProfit === "number" ? buyerProfit : 0) +
+            (typeof supplierProfit === "number" ? supplierProfit : 0);
+
+        function fmt(x) {
+            return (typeof x === "number") ? x.toFixed(2) : (x ?? "?");
+        }
+
+        const row = document.createElement("tr");
+        const cells = [
+            roundIndex,
+            orderQuantity ?? roundOutput.order_quantity ?? "?",
+            roundOutput.realized_demand ?? "?",
+            roundOutput.sales ?? "?",
+            roundOutput.returns ?? "?",
+            fmt(roundOutput.buyer_revenue),
+            fmt(roundOutput.buyer_cost),
+            fmt(buyerProfit),
+            fmt(roundOutput.supplier_revenue),
+            fmt(roundOutput.supplier_cost),
+            fmt(supplierProfit),
+            fmt(supplyChainProfit),
+        ];
+
+        for (const value of cells) {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.appendChild(cell);
+        }
+
+        tbody.appendChild(row);
     }
 
     // ================================
@@ -1187,6 +1248,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (roundResultCardEl) {
                     roundResultCardEl.textContent = "No order placed yet.";
                 }
+                resetRoundResultsTable();
 
                 // Clear "end game early" status message when starting a new game
                 const endGameEarlyOutput = document.getElementById("end-game-early-output");
@@ -1629,34 +1691,44 @@ document.addEventListener("DOMContentLoaded", () => {
         const orderOutput = document.getElementById("order-output");
         const orderQuantityInput = document.getElementById("order-quantity-input");
 
-        if (!orderForm || !orderOutput || !orderQuantityInput) return;
+        if (!orderForm || !orderQuantityInput) return;
 
         orderForm.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            orderOutput.textContent = "Placing order...";
+            if (orderOutput) {
+                orderOutput.textContent = "Placing order...";
+            }
 
             if (!sessionId) {
-                orderOutput.textContent = "Start a game first!";
+                if (orderOutput) {
+                    orderOutput.textContent = "Start a game first!";
+                }
                 addNotification("Order attempted without a game.", "error");
                 return;
             }
 
             if (!currentState) {
-                orderOutput.textContent = "No game state available.";
+                if (orderOutput) {
+                    orderOutput.textContent = "No game state available.";
+                }
                 addNotification("Order attempted with no game state.", "error");
                 return;
             }
 
             if (currentState.game_over) {
-                orderOutput.textContent = "Game is over. Start a new game.";
+                if (orderOutput) {
+                    orderOutput.textContent = "Game is over. Start a new game.";
+                }
                 addNotification("Order attempted after game over.", "error");
                 return;
             }
 
             const quantity = parseInt(orderQuantityInput.value, 10);
             if (Number.isNaN(quantity) || quantity < 0) {
-                orderOutput.textContent = "Please enter a valid (non-negative) order quantity.";
+                if (orderOutput) {
+                    orderOutput.textContent = "Please enter a valid (non-negative) order quantity.";
+                }
                 addNotification("Invalid order quantity entered.", "error");
                 return;
             }
@@ -1677,9 +1749,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 // Render round result card for the student
                 renderRoundResultCard(data.round_output, quantity);
+                appendRoundResultsTableRow(data.round_output, quantity);
 
                 // Keep raw JSON for debug
-                orderOutput.textContent = JSON.stringify(data.round_output, null, 2);
+                if (orderOutput) {
+                    orderOutput.textContent = JSON.stringify(data.round_output, null, 2);
+                }
 
                 renderGameState();
 
@@ -1707,7 +1782,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             } catch (err) {
                 console.error(err);
-                orderOutput.textContent = "Error: " + err.message;
+                if (orderOutput) {
+                    orderOutput.textContent = "Error: " + err.message;
+                }
                 renderRoundResultCard(null);
                 addNotification("Order error: " + err.message, "error");
             }

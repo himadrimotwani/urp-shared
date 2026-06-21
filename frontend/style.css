@@ -692,6 +692,50 @@ pre {
 .profit-positive { color: var(--emerald); }
 .profit-negative { color: var(--rose); }
 
+.round-results-table-wrap {
+  margin-top: .75rem;
+  border: 1px solid var(--card-border);
+  border-radius: var(--r-md);
+  overflow-x: auto;
+  background: var(--card-bg);
+}
+
+.round-results-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  font-size: .78rem;
+}
+
+.round-results-table th,
+.round-results-table td {
+  padding: .65rem .75rem;
+  border-bottom: 1px solid var(--card-border);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.round-results-table th {
+  background: #f7f8fc;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.round-results-table th:first-child,
+.round-results-table td:first-child {
+  text-align: left;
+}
+
+.round-results-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.round-results-table .empty-row td {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 1rem;
+}
+
 /* ============================================================
    iMESSAGE CHAT
 ============================================================ */
