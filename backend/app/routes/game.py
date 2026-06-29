@@ -31,7 +31,7 @@ from app.services.game_service import (
 )
 from app.services.game_service import SESSIONS
 from app.services.demand_history_service import load_demand_history_by_id
-from app.services.storage_service import log_round_record
+from app.services.storage_service import log_chat_record, log_round_record
 
 router = APIRouter()
 
@@ -306,6 +306,11 @@ def get_game_summary(session_id: str) -> GameSummary:
                 "end_time": datetime.now().isoformat(),  # Mark end time when game ends
             }
             state.negotiation_history.append(ongoing_negotiation)
+            log_chat_record(
+                participant_id=state.participant_id,
+                session_id=session_id,
+                negotiation_record=ongoing_negotiation,
+            )
     
     # Convert negotiation history to schema format
     negotiation_history_data = [
@@ -397,6 +402,11 @@ def end_game_early(request: GameStateRequest) -> Dict[str, Any]:
                 "end_time": datetime.now().isoformat(),  # Mark end time when game ends
             }
             state.negotiation_history.append(ongoing_negotiation)
+            log_chat_record(
+                participant_id=state.participant_id,
+                session_id=session_id,
+                negotiation_record=ongoing_negotiation,
+            )
     
     return {
         "message": "Game ended early. Summary is now available.",

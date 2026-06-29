@@ -45,8 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const loginFormEl = document.getElementById("login-form");
     const loginNameInput = document.getElementById("login-name");
     const loginEmailInput = document.getElementById("login-email");
-    const loginStudentIdInput = document.getElementById("login-student-id");
-    const loginSectionInput = document.getElementById("login-section");
     const loginErrorEl = document.getElementById("login-error");
     const loginSubmitBtn = document.getElementById("login-submit-btn");
 
@@ -118,8 +116,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({
                         name,
                         email: (loginEmailInput?.value || "").trim() || null,
-                        student_id: (loginStudentIdInput?.value || "").trim() || null,
-                        section: (loginSectionInput?.value || "").trim() || null,
                     }),
                 });
 
@@ -2064,6 +2060,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const loadRecordsBtn = document.getElementById("load-records-btn");
         const downloadParticipantsBtn = document.getElementById("download-participants-btn");
         const downloadRoundsBtn = document.getElementById("download-rounds-btn");
+        const downloadChatLogsBtn = document.getElementById("download-chat-logs-btn");
         const recordsAccessCodeInput = document.getElementById("records-access-code");
         const recordsSummary = document.getElementById("records-summary");
 
@@ -2134,6 +2131,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 const code = requireRecordsAccessCode();
                 if (!code) return;
                 downloadFile(`${BASE_URL}/records/rounds.csv?code=${encodeURIComponent(code)}`);
+            });
+        }
+
+        if (downloadChatLogsBtn) {
+            downloadChatLogsBtn.addEventListener("click", () => {
+                const code = requireRecordsAccessCode();
+                if (!code) return;
+                downloadFile(`${BASE_URL}/records/chat-logs.csv?code=${encodeURIComponent(code)}`);
             });
         }
     }

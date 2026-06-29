@@ -23,6 +23,7 @@ from app.services.negotiation_service import supplier_evaluate_contract
 from app.services.config_service import load_negotiation_config
 from app.services.ai_service import generate_chat_response
 from app.services.game_service import SESSIONS
+from app.services.storage_service import log_chat_record
 
 router = APIRouter()
 
@@ -90,6 +91,11 @@ def negotiate(request: NegotiateRequest) -> NegotiateResponse:
             "end_time": datetime.now().isoformat(),  # Mark end time when new negotiation starts
         }
         state.negotiation_history.append(previous_negotiation)
+        log_chat_record(
+            participant_id=state.participant_id,
+            session_id=session_id,
+            negotiation_record=previous_negotiation,
+        )
     
     # Clear previous negotiation state when starting a NEW negotiation
     # This ensures each negotiation attempt has its own clean chat history
@@ -154,6 +160,11 @@ def negotiate(request: NegotiateRequest) -> NegotiateResponse:
             "end_time": datetime.now().isoformat(),  # Mark end time when contract becomes active
         }
         state.negotiation_history.append(negotiation_record)
+        log_chat_record(
+            participant_id=state.participant_id,
+            session_id=session_id,
+            negotiation_record=negotiation_record,
+        )
         
         # Clear negotiation state since negotiation is complete
         state.negotiation_chat_history = []
@@ -332,6 +343,11 @@ def accept_counter(request: AcceptCounterRequest) -> AcceptCounterResponse:
             "end_time": datetime.now().isoformat(),  # Mark end time when contract becomes active
         }
         state.negotiation_history.append(negotiation_record)
+        log_chat_record(
+            participant_id=state.participant_id,
+            session_id=session_id,
+            negotiation_record=negotiation_record,
+        )
         
         state.contract = state.negotiation_draft_contract
         state.contract.remaining_rounds = state.contract.length
@@ -355,4 +371,3 @@ def accept_counter(request: AcceptCounterRequest) -> AcceptCounterResponse:
     return AcceptCounterResponse(
         state=to_game_state_response(session_id, state)
     )
-

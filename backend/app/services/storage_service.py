@@ -18,6 +18,7 @@ from uuid import uuid4
 STORAGE_DIR = Path("storage")
 PARTICIPANTS_PATH = STORAGE_DIR / "participants.jsonl"
 ROUNDS_PATH = STORAGE_DIR / "rounds.jsonl"
+CHAT_LOGS_PATH = STORAGE_DIR / "chat_logs.jsonl"
 
 _write_lock = Lock()
 
@@ -95,6 +96,19 @@ def list_round_records() -> list[dict[str, Any]]:
     return rounds
 
 
+def list_chat_log_records() -> list[dict[str, Any]]:
+    participants_by_id = {
+        record.get("participant_id"): record
+        for record in list_participant_records()
+        if record.get("participant_id")
+    }
+    chat_logs = _read_jsonl(CHAT_LOGS_PATH)
+    for record in chat_logs:
+        if not record.get("participant"):
+            record["participant"] = participants_by_id.get(record.get("participant_id"))
+    return chat_logs
+
+
 def get_records_summary(limit: int = 25) -> dict[str, Any]:
     participants = list_participant_records()
     rounds = list_round_records()
@@ -166,6 +180,46 @@ def rounds_csv() -> str:
     )
 
 
+def chat_logs_csv() -> str:
+    rows = []
+    for record in list_chat_log_records():
+        participant = record.get("participant") or {}
+        final_contract = record.get("final_contract") or {}
+        chat_messages = record.get("chat_messages") or []
+        transcript = "\n".join(
+            f"{msg.get('role', 'unknown')}: {msg.get('content', '')}"
+            for msg in chat_messages
+            if isinstance(msg, dict)
+        )
+        rows.append({
+            "logged_at": record.get("logged_at"),
+            "participant_id": record.get("participant_id"),
+            "name": participant.get("name"),
+            "email": participant.get("email"),
+            "student_id": participant.get("student_id"),
+            "section": participant.get("section"),
+            "session_id": record.get("session_id"),
+            "final_decision": record.get("final_decision"),
+            "start_time": record.get("start_time"),
+            "end_time": record.get("end_time"),
+            "wholesale_price": final_contract.get("wholesale_price"),
+            "buyback_price": final_contract.get("buyback_price"),
+            "contract_length": final_contract.get("length"),
+            "contract_type": final_contract.get("contract_type"),
+            "chat_transcript": transcript,
+            "chat_messages_json": json.dumps(chat_messages, default=_json_default),
+        })
+    return _csv_response(
+        rows,
+        [
+            "logged_at", "participant_id", "name", "email", "student_id", "section",
+            "session_id", "final_decision", "start_time", "end_time",
+            "wholesale_price", "buyback_price", "contract_length", "contract_type",
+            "chat_transcript", "chat_messages_json",
+        ],
+    )
+
+
 def create_participant_record(
     *,
     name: str,
@@ -203,3 +257,24 @@ def log_round_record(
         "round_output": round_output,
     }
     _append_jsonl(ROUNDS_PATH, record)
+
+
+def log_chat_record(
+    *,
+    participant_id: str | None,
+    session_id: str,
+    negotiation_record: dict[str, Any],
+) -> None:
+    participant = get_participant_record(participant_id)
+    record = {
+        "logged_at": _now_iso(),
+        "participant_id": participant_id,
+        "participant": participant,
+        "session_id": session_id,
+        "chat_messages": negotiation_record.get("chat_messages") or [],
+        "final_decision": negotiation_record.get("final_decision"),
+        "final_contract": negotiation_record.get("final_contract"),
+        "start_time": negotiation_record.get("start_time"),
+        "end_time": negotiation_record.get("end_time"),
+    }
+    _append_jsonl(CHAT_LOGS_PATH, record)
